@@ -26,6 +26,8 @@ contains the answer.
 <!-- e.g. "One of my questions is about a topic only two documents mention, so
      I expect that one to be hard." -->
 
+My corpus contains information that directly answers most of my test questions, so the retrieval system should be able to find the relevant information for nearly all of them. I chose 4 of 5 rather than 5 of 5 because at least one question may be harder to retrieve correctly if its answer is spread across documents or phrased differently from the query.
+
 ---
 
 ## 2. Every answer names a source
@@ -35,6 +37,8 @@ Every answer the system produces names at least one source document.
 **Why this target:**
 <!-- Why all five and not four? What about your setup makes that achievable —
      or what would have to go wrong for it not to be? -->
+
+My pipeline already has access to the document and chunk metadata used during retrieval, so including a source should be achievable for every in-scope answer. I chose 5 of 5 because an answer without a source is difficult to verify, and there is no reason for the system to omit attribution when the retrieved chunks already have source information.
 
 ---
 
@@ -53,9 +57,13 @@ in at least 4 of 5 tries.
 <!-- What did your distances look like when you set the cutoff in Milestone 4?
      Was there a clean gap, or did the two groups overlap? -->
 
+The out-of-scope questions are intentionally about information that is not represented in my corpus, so their retrieval distances should generally be worse than questions that have relevant documents. I chose 4 of 5 because the distance distributions may overlap for some questions, making one false acceptance possible while still requiring the gate to reject most clearly irrelevant queries.
+
 ---
 
 ## 4. Something about your chunks
+
+At least 4 of 5 sampled chunks should be readable as a complete paragraph-sized thought, without cutting a sentence in half at the beginning or end.
 
 <!-- YOU WRITE THIS ONE.
 
@@ -73,11 +81,13 @@ in at least 4 of 5 tries.
 
 **Why this target:**
 
-
+During chunking, I want enough text in each chunk to preserve the context needed to answer questions, but not so much that unrelated information is combined together. A paragraph-sized chunk should preserve the meaning of the source material while giving retrieval a reasonably focused amount of information.
 
 ---
 
 ## 5. Your choice
+
+For at least 4 of my 5 in-scope test questions, the correct source document should appear in the top 3 retrieved results.
 
 <!-- YOU WRITE THIS ONE TOO.
 
@@ -91,7 +101,7 @@ in at least 4 of 5 tries.
 
 **Why this target:**
 
-
+A relevant document appearing in the top three gives the answer-generation step several chances to find the necessary information instead of depending on a single retrieved chunk. I chose 4 of 5 because most of my test questions should have a clearly relevant document in the corpus, while allowing one question to be harder because of differences in wording or how the information is distributed.
 
 ---
 
