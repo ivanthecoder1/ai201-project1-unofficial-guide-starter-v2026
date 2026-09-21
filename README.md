@@ -90,7 +90,7 @@ The thing I'd say: the unwritten rules are the hard part, not the coursework. As
 Emergency fund for textbooks and travel exists and is not means-tested beyond a short form.
 ```
 
-**Chunk 3** — source: `source: thread_laptop_specs.txt#0` — produced by: `produced by: chunker.py::fallback_split`
+**Chunk 3** — source: `thread_laptop_specs.txt#0` — produced by: `produced by: chunker.py::fallback_split`
 
 ```
 THREAD: How much laptop do I actually need for CS courses?
@@ -143,6 +143,8 @@ Write down specifics before the meeting. 'It's not working' is hard to act on; '
 **Question: What can a student do if they are not getting along with their roommate?**
 
 **Answer: A student should talk to their RA early and frame the conversation as getting help resolving the situation rather than immediately requesting a room change. The room-change process generally starts with mediation, and the student should write down specific problems before the meeting so they can clearly explain what is happening**
+
+**Source: thread_roommate_conflict.txt#0**
 
 ```
 ```
