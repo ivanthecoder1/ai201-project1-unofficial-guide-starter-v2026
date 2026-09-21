@@ -27,10 +27,12 @@
 
      Milestone 5. -->
 
+     I picked the advice thread corpus. This system answers general questions that university students might have, such as questions about textbooks, studying, courses, housing, and other student experiences. The corpus consists of discussion threads with replies from other students. The goal is to retrieve relevant threads so that the system can answer questions using information from the corpus rather than unrelated information.
+
 ## Chunking Strategy
 
-**Chunk size:**
-**Overlap:**
+**Chunk size: 800**
+**Overlap: 120**
 
 <!-- What about YOUR documents made you pick these numbers? Short posts and
      long sectioned guides don't want the same chunking, and "800 seemed
@@ -41,6 +43,8 @@
      more than pretending you got it right first time.
 
      Milestone 3. -->
+
+     I kept the starter chunk size and overlap because the advice thread documents are already organized into short, self-contained threads. When I inspected the generated chunks, each chunk generally contained one complete thread along with its replies, rather than combining unrelated topics. This makes each chunk understandable on its own and means a question can usually be answered using the information in a single chunk. Because the threads are already relatively short, increasing the chunk size was not necessary.
 
 ## Sample Chunks
 
@@ -136,14 +140,14 @@ Write down specifics before the meeting. 'It's not working' is hard to act on; '
 <!-- One complete question and answer, pasted as text, with the source line
      visible. Milestone 4. -->
 
-**Question:**
+**Question: What can a student do if they are not getting along with their roommate?**
 
-**Answer:**
+**Answer: A student should talk to their RA early and frame the conversation as getting help resolving the situation rather than immediately requesting a room change. The room-change process generally starts with mediation, and the student should write down specific problems before the meeting so they can clearly explain what is happening**
 
 ```
 ```
 
-**My relevance cutoff:**
+**My relevance cutoff: 0.7**
 
 <!-- The number you set in config.py, and how you got there.
 
@@ -154,9 +158,21 @@ Write down specifics before the meeting. 'It's not working' is hard to act on; '
 
      Milestone 4. -->
 
-| Question | In corpus? | Best distance |
-|---|---|---|
-|  |  |  |
+
+| Question                                                                           | In corpus? | Best distance |
+| ---------------------------------------------------------------------------------- | ---------- | ------------- |
+| What can a student do if they are not getting along with their roommate?           | Yes        | 0.3963        |
+| What determines whether a student can receive an extension for late work?          | Yes        | 0.5102        |
+| What are study spots students can use besides the library?                         | Yes        | 0.3698        |
+| Who should a student ask about whether they need a specific edition of a textbook? | Yes        | 0.6122        |
+| How should a student handle an absent teammate in a group project?                 | Yes        | 0.3000        |
+| What is the capital of Mongolia?                                                   | No         | 0.8902        |
+| How do I change the oil in a diesel engine?                                        | No         | 0.9299        |
+| Who won the 1994 World Cup?                                                        | No         | 0.7866        |
+| What is the recommended dosage of ibuprofen for a headache?                        | No         | 0.8280        |
+| How do I write a for loop in Rust?                                                 | No         | 0.8712        |
+
+The five in-corpus questions had best distances from 0.3000 to 0.6122. The five out-of-corpus questions had best distances from 0.7866 to 0.9299. This left a gap between 0.6122 and 0.7866, so I selected 0.7 as the relevance cutoff. This cutoff accepts all five in-corpus questions while rejecting all five out-of-corpus questions in this test.
 
 ## How I Used AI
 
@@ -169,9 +185,9 @@ Write down specifics before the meeting. 'It's not working' is hard to act on; '
 
      Milestone 5. -->
 
-**1.**
+**1.** I asked Claude to help me decide how to choose the relevance cutoff. It explained that I should run the five in-scope questions and five out-of-scope questions, compare their best retrieval distances, and choose a cutoff in the gap between the two groups. I then used the measured distances from my own corpus rather than blindly using the starter's default value.
 
-**2.**
+**2.** I asked Claude to check whether my acceptance criteria were testable. It helped me make the criteria specific enough that I could verify them by running commands and checking observable results instead of using vague statements such as whether the system "works well."
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
