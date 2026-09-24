@@ -87,7 +87,7 @@ During chunking, I want enough text in each chunk to preserve the context needed
 
 ## 5. Your choice
 
-For at least 4 of my 5 in-scope test questions, the correct source document should appear in the top 3 retrieved results.
+<!-- For at least 4 of my 5 in-scope test questions, the correct source document should appear in the top 3 retrieved results. -->
 
 Revised Criterion: For all 5 of my 5 in-scope test questions, the answer should name the correct source document.
 
@@ -103,7 +103,7 @@ Revised Criterion: For all 5 of my 5 in-scope test questions, the answer should 
 
 **Why this target:**
 
-A relevant document appearing in the top three gives the answer-generation step several chances to find the necessary information instead of depending on a single retrieved chunk. I chose 4 of 5 because most of my test questions should have a clearly relevant document in the corpus, while allowing one question to be harder because of differences in wording or how the information is distributed.
+<!-- A relevant document appearing in the top three gives the answer-generation step several chances to find the necessary information instead of depending on a single retrieved chunk. I chose 4 of 5 because most of my test questions should have a clearly relevant document in the corpus, while allowing one question to be harder because of differences in wording or how the information is distributed. -->
 
 New Criteria: The run output does not preserve their retrieval ranking, and only alphabetically sorts the retrieved source names. Hence, I had to change my criteria. For the new one, I care about the answer pointing back to the document that actually contains the information used to answer the question, rather than merely naming any retrieved document. I chose 5 of 5 because the correct source can be checked directly against the corpus and the generated answer already includes source attribution.
 

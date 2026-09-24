@@ -499,11 +499,11 @@ The original Criterion 5 could not be measured from the evaluation output becaus
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. 4 of 5 sampled chunks should be readable as a complete paragraph-sized thought | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. The answer should name the correct source document | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
 **Did it help?**
 
@@ -513,6 +513,8 @@ The original Criterion 5 could not be measured from the evaluation output becaus
      tell.
 
      Milestone 4. -->
+
+     The revised Criterion 5 made the criterion measurable. All 5 of 5 in-scope questions named the correct source document in all three runs, so the revised criterion was met. The revision did not change the retrieval or generation behavior; it changed the measurement from an unobservable retrieval-ranking outcome to a source-attribution outcome that could be directly checked from the generated answers.
 
 ## What's Still Broken
 
@@ -524,9 +526,13 @@ The original Criterion 5 could not be measured from the evaluation output becaus
 
      Milestone 5. -->
 
+     No criteria were missed after the revision. All five criteria met their targets in the after run.
+
 ## What I'd Do Differently
 
 <!-- Knowing what you know now — which of your five criteria would you write
      differently, and why?
 
      Milestone 5. -->
+
+     I would write Criterion 5 differently from the beginning. The original criterion depended on retrieval ranking, but the evaluation output did not preserve the ranking, so there was no reliable way to determine whether the correct source appeared in the top three. I would instead define the criterion around an observable outcome, such as whether the generated answer identifies the correct source document.
