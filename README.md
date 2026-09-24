@@ -483,7 +483,11 @@ Study spots besides the library include the Ridgeway Café (before 10am) and the
 
 **What I changed:**
 
+I revised Criterion 5 from measuring whether the correct source document appeared in the top 3 retrieved results to measuring whether the generated answer named the correct source document.
+
 **Why I picked it:**
+
+The original Criterion 5 could not be measured from the evaluation output because run_eval.py alphabetically sorts the retrieved source names instead of preserving their retrieval order. The revised criterion uses an observable outcome. The source named in the generated answer that can be checked directly against the source document containing the answer.
 
 <!-- Connect it to a specific diagnosis above in one sentence. If you can't,
      you picked a fix because it sounded impressive. -->
