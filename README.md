@@ -446,6 +446,15 @@ Study spots besides the library include the Ridgeway Café (before 10am) and the
 | 4 |  |  |  |
 | 5 |  |  |  |
 
+| # | Criterion | Verdict | How I decided |
+|---|---|---|---|
+| 1 | Retrieved chunks contain the answer | MET | All 5 of 5 in-scope questions had the information needed to answer the question in the retrieved chunks, exceeding the target of 4 of 5. |
+| 2 | Every answer names a source | MET | All 5 of 5 in-scope answers identified a source document, meeting the target of 5 of 5. |                                                                                                                                        
+| 3 | Gate stops out-of-corpus questions | MET | The relevance gate refused all 5 of 5 out-of-scope questions, exceeding the target of 4 of 5. |
+| 4 | 4 of 5 sampled chunks should be readable as a complete paragraph-sized thought | MET | All 5 sampled chunks were readable as complete, self-contained thoughts without sentences being cut off at the beginning or end, exceeding the target of 4 of 5. |
+| 5 | The correct source document should appear in the top 3 retrieved results | MISSED | The run output alphabetically sorts the retrieved source names before writing them to the report, so it does not preserve their retrieval ranking. Because the top-3 order cannot be determined from the recorded output, this criterion cannot be verified. |
+
+
 ## Diagnoses
 
 <!-- For each miss: which stage caused it, and how. The stage alone isn't
