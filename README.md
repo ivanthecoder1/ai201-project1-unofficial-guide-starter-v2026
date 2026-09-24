@@ -475,6 +475,10 @@ Study spots besides the library include the Ridgeway Café (before 10am) and the
 
      Milestone 3. -->
 
+     No confirmed misses in the current baseline evaluation. Criteria 1–4 all met their targets, and the original Criterion 5 was not measurable because run_eval.py alphabetically sorted the retrieved source names rather than preserving retrieval order. I therefore replaced Criterion 5 with a measurable criterion about correct source attribution.
+
+     The results suggest that some of the original targets were conservative. In particular, Criterion 1 achieved 5/5 against a target of 4/5, Criterion 3 achieved 5/5 against a target of 4/5, and the five sampled chunks in Criterion 4 were all readable against a target of 4/5. I would tighten Criterion 1 from 4/5 to 5/5 because all five test questions have answer information represented in the corpus and the baseline retrieved the necessary information for every question.
+
 ## The Improvement
 
 **What I changed:**
