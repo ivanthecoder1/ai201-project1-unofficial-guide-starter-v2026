@@ -1,31 +1,6 @@
-# The Unofficial Guide
-
-<!-- Replace this line with your name and which corpus you picked. -->
-
-> **This file is your submission.** Fill it in as you go — most sections get
-> written during the milestone that produces them, not at the end.
->
-> How the starter works, and every command you'll need, is in `RUNNING.md`.
-> Leave that file alone.
->
-> **Paste everything as text.** No screenshots, no video. A typed table gets
-> full credit; a picture of the same table gets none.
->
-> Delete these instruction blocks as you replace them. The `<!-- -->` comments
-> are notes to you and don't show up when the page renders — you can leave them
-> or remove them.
-
----
-
 # Unit 1
 
 ## What This Does
-
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
-
-     Milestone 5. -->
 
      I picked the advice thread corpus. This system answers general questions that university students might have, such as questions about textbooks, studying, courses, housing, and other student experiences. The corpus consists of discussion threads with replies from other students. The goal is to retrieve relevant threads so that the system can answer questions using information from the corpus rather than unrelated information.
 
@@ -34,28 +9,9 @@
 **Chunk size: 800**
 **Overlap: 120**
 
-<!-- What about YOUR documents made you pick these numbers? Short posts and
-     long sectioned guides don't want the same chunking, and "800 seemed
-     reasonable" earns nothing. Point at something you noticed when you read
-     the documents in Milestone 1.
-
-     If you changed your mind partway through, say so and say why. That's worth
-     more than pretending you got it right first time.
-
-     Milestone 3. -->
-
      I kept the starter chunk size and overlap because the advice thread documents are already organized into short, self-contained threads. When I inspected the generated chunks, each chunk generally contained one complete thread along with its replies, rather than combining unrelated topics. This makes each chunk understandable on its own and means a question can usually be answered using the information in a single chunk. Because the threads are already relatively short, increasing the chunk size was not necessary.
 
 ## Sample Chunks
-
-<!-- Five chunks, pasted as text. Label each one and name the file it came from
-     AND the function that produced it — the grader checks your code against
-     what you claim here.
-
-     `python app.py chunks -n 5` prints all three for you. Copy them straight
-     across.
-
-     Milestone 3. -->
 
 **Chunk 1** — source: `thread_bike_commute.txt#0` — produced by: `chunker.py::fallback_split`
 
@@ -137,9 +93,6 @@ Write down specifics before the meeting. 'It's not working' is hard to act on; '
 
 ## Sample Answer
 
-<!-- One complete question and answer, pasted as text, with the source line
-     visible. Milestone 4. -->
-
 **Question: What can a student do if they are not getting along with their roommate?**
 
 **Answer: A student should talk to their RA early and frame the conversation as getting help resolving the situation rather than immediately requesting a room change. The room-change process generally starts with mediation, and the student should write down specific problems before the meeting so they can clearly explain what is happening**
@@ -150,16 +103,6 @@ Write down specifics before the meeting. 'It's not working' is hard to act on; '
 ```
 
 **My relevance cutoff: 0.7**
-
-<!-- The number you set in config.py, and how you got there.
-
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
-
-     Milestone 4. -->
-
 
 | Question                                                                           | In corpus? | Best distance |
 | ---------------------------------------------------------------------------------- | ---------- | ------------- |
@@ -178,43 +121,16 @@ The five in-corpus questions had best distances from 0.3000 to 0.6122. The five 
 
 ## How I Used AI
 
-<!-- Two specific moments. For each: what you asked for, what came back, and
-     what you changed about it.
-
-     "I asked Claude to write the chunking function from my notes. It ignored
-     the overlap, so I added that myself" is the level of detail we're after.
-     "I used AI to help me code" is not.
-
-     Milestone 5. -->
-
 **1.** I asked Claude to help me decide how to choose the relevance cutoff. It explained that I should run the five in-scope questions and five out-of-scope questions, compare their best retrieval distances, and choose a cutoff in the gap between the two groups. I then used the measured distances from my own corpus rather than blindly using the starter's default value.
 
 **2.** I asked Claude to check whether my acceptance criteria were testable. It helped me make the criteria specific enough that I could verify them by running commands and checking observable results instead of using vague statements such as whether the system "works well."
-
-<!-- ── Stretch features ─────────────────────────────────────────────────────
-     Doing one? Say so here BEFORE you start. A feature this README never
-     claims earns nothing.
-     ───────────────────────────────────────────────────────────────────────── -->
 
 ---
 
 # Unit 2
 
-<!-- These sections get ADDED to what's already above. Don't delete or rewrite
-     unit 1 — the point is that someone can see what you said before you knew
-     how it went. -->
-
 ## Run Log — Before
 
-<!-- Your five criteria, three runs each. `python run_eval.py --label before`
-     runs the questions, puts the OUT_OF_SCOPE ones through the gate, and
-     writes it all into results/ for you. Targets come from criteria.md; the
-     verdict column is your call.
-
-     Criterion 3 is measured in one deterministic pass rather than three, so
-     the same number goes in all three run columns. That's correct, not lazy.
-
-     Milestone 1. -->
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
@@ -223,10 +139,6 @@ The five in-corpus questions had best distances from 0.3000 to 0.6122. The five 
 | 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 | 4. 4 of 5 sampled chunks should be readable as a complete paragraph-sized thought | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 | 5. The correct source document should appear in the top 3 retrieved results | 4 of 5 | 0/5 | 0/5 | 0/5 | MISSED |
-
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
 
 Criterion 1 - Retrieved chunk contains the answer
 Produced by: run_eval.py::run_once → store.py::
@@ -314,10 +226,6 @@ Produced by: `app.py` → chunker.py::split_documents → chunker.py::fallback_s
  ivanz@Ivan MINGW64 ~/Downloads/Codepath AI 301/ai201-coursework/ai201-project1-unofficial-guide-starter-v2026 (main)
 $ python app.py chunks
 26 chunks total. Showing 5, spread across the corpus.
-
-Paste these into your README under Sample Chunks. The rubric asks
-for the source file and the function that produced them — both are
-printed for you below.
 
 ======================================================================
 Chunk 1  |  source: thread_bike_commute.txt#0  |  produced by: chunker.py::fallback_split
@@ -429,23 +337,6 @@ Study spots besides the library include the Ridgeway Café (before 10am) and the
 
 ## Verdicts
 
-<!-- MET or MISSED for each of the five, against the target you wrote last
-     unit — not a new one. Plus a sentence on how you decided. That sentence
-     matters most where it was close.
-
-     If your target said 4 of 5 and your runs came out 4, 3, 4, that's a MISS.
-     The target has to hold, not show up occasionally.
-
-     Milestone 2. -->
-
-| # | Criterion | Verdict | How I decided |
-|---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
-
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
 | 1 | Retrieved chunks contain the answer | MET | All 5 of 5 in-scope questions had the information needed to answer the question in the retrieved chunks, exceeding the target of 4 of 5. |
@@ -456,24 +347,6 @@ Study spots besides the library include the Ridgeway Café (before 10am) and the
 
 
 ## Diagnoses
-
-<!-- For each miss: which stage caused it, and how. The stage alone isn't
-     enough — you need the mechanism.
-
-     Not a diagnosis: "Question 3 didn't work."
-     A diagnosis:     "Question 3 asks about laundry costs. The answer is in
-                       one sentence that got split across two chunks, so
-                       neither chunk on its own contains it."
-
-     The five stages: loading → chunking → embedding → retrieval → generation.
-
-     Look for a pattern. If three misses all ask about numbers, that's one
-     problem, not three.
-
-     Missed nothing? Say so, then say honestly whether your targets were set
-     low, and which one you'd tighten and to what.
-
-     Milestone 3. -->
 
      No confirmed misses in the current baseline evaluation. Criteria 1–4 all met their targets, and the original Criterion 5 was not measurable because run_eval.py alphabetically sorted the retrieved source names rather than preserving retrieval order. I therefore replaced Criterion 5 with a measurable criterion about correct source attribution.
 
@@ -489,13 +362,7 @@ I revised Criterion 5 from measuring whether the correct source document appeare
 
 The original Criterion 5 could not be measured from the evaluation output because run_eval.py alphabetically sorts the retrieved source names instead of preserving their retrieval order. The revised criterion uses an observable outcome. The source named in the generated answer that can be checked directly against the source document containing the answer.
 
-<!-- Connect it to a specific diagnosis above in one sentence. If you can't,
-     you picked a fix because it sounded impressive. -->
-
 ### Run Log — After
-
-<!-- Same format, same five criteria, three runs each.
-     `python run_eval.py --label after` -->
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
@@ -507,32 +374,12 @@ The original Criterion 5 could not be measured from the evaluation output becaus
 
 **Did it help?**
 
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
-
-     Milestone 4. -->
-
      The revised Criterion 5 made the criterion measurable. All 5 of 5 in-scope questions named the correct source document in all three runs, so the revised criterion was met. The revision did not change the retrieval or generation behavior; it changed the measurement from an unobservable retrieval-ranking outcome to a source-attribution outcome that could be directly checked from the generated answers.
 
 ## What's Still Broken
 
-<!-- For each criterion still missed after your fix: what you'd do about it,
-     and why you stopped where you did.
-
-     "I ran out of time" is fine if it's true. Pretending nothing is left is
-     not.
-
-     Milestone 5. -->
-
      No criteria were missed after the revision. All five criteria met their targets in the after run.
 
 ## What I'd Do Differently
-
-<!-- Knowing what you know now — which of your five criteria would you write
-     differently, and why?
-
-     Milestone 5. -->
 
      I would write Criterion 5 differently from the beginning. The original criterion depended on retrieval ranking, but the evaluation output did not preserve the ranking, so there was no reliable way to determine whether the correct source appeared in the top three. I would instead define the criterion around an observable outcome, such as whether the generated answer identifies the correct source document.
