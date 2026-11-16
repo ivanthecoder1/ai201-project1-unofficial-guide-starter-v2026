@@ -25,13 +25,19 @@ Unit 9 has you build the structured log yourself — the request line, the
 timing field everyone skips, the whole instrument-before-you-deploy exercise.
 Shipping a logger here would hand you the answer to that. Add yours in unit 9;
 this file stays the bare shell until then.
+
+Capstone (unit 9): /ask now writes one structured record per request to
+logs/requests.jsonl via runlog.py — see the README's Instrumentation section.
 """
 
 import os
+import time
+import uuid
 
 from flask import Flask, jsonify, request
 
 import config
+import runlog
 
 app = Flask(__name__)
 
@@ -73,15 +79,48 @@ def ask():
     """
     from app import ask_pipeline
 
-    payload = request.get_json(silent=True) or {}
-    question = (payload.get("question") or "").strip()
+    # Capstone: every request below leaves exactly one record in
+    # logs/requests.jsonl — answered, refused, rejected input, or crash.
+    started = time.perf_counter()
+    base = {
+        "ts": runlog.now_iso(),
+        "request_id": uuid.uuid4().hex[:12],
+        "route": "/ask",
+        "model": config.MODEL,
+        "corpus": config.CORPUS,
+    }
+
+    def elapsed_ms():
+        return round((time.perf_counter() - started) * 1000, 1)
+
+    payload = request.get_json(silent=True)
+    raw_question = payload.get("question") if isinstance(payload, dict) else None
+    question = raw_question.strip() if isinstance(raw_question, str) else ""
 
     if not question:
+        if not isinstance(payload, dict):
+            reason = "body_not_json_object"
+        elif raw_question is None:
+            reason = "missing_question"
+        elif not isinstance(raw_question, str):
+            reason = "question_not_string"
+        else:
+            reason = "empty_question"
+        runlog.write(
+            **base,
+            status="rejected",
+            http_status=400,
+            question=None if raw_question is None else repr(raw_question),
+            latency_ms=elapsed_ms(),
+            error_type=reason,
+            error="no usable question in request body",
+        )
         return (
             jsonify(
                 {
                     "error": "Send JSON with a question in it, like "
-                    '{"question": "is the housing lottery random?"}'
+                    '{"question": "is the housing lottery random?"}',
+                    "request_id": base["request_id"],
                 }
             ),
             400,
@@ -90,7 +129,50 @@ def ask():
     try:
         outcome = ask_pipeline(question, corpus=config.CORPUS)
     except Exception as exc:  # noqa: BLE001 — a reader gets this, not a traceback
-        return jsonify({"error": f"{type(exc).__name__}: {exc}"}), 500
+        runlog.write(
+            **base,
+            status="error",
+            http_status=500,
+            question=question,
+            latency_ms=elapsed_ms(),
+            error_type=type(exc).__name__,
+            error=str(exc),
+        )
+        return (
+            jsonify(
+                {
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "request_id": base["request_id"],
+                }
+            ),
+            500,
+        )
+
+    latency = elapsed_ms()
+    usage = outcome.get("usage") or {}
+    prompt_tokens = usage.get("prompt_tokens")
+    output_tokens = usage.get("output_tokens")
+    runlog.write(
+        **base,
+        status="refused" if outcome["refused"] else "answered",
+        http_status=200,
+        question=question,
+        answer=outcome["answer"],
+        sources=outcome["sources"],
+        retrieved=outcome.get("retrieved"),
+        best_distance=round(outcome["best_distance"], 4),
+        threshold=outcome["threshold"],
+        latency_ms=latency,
+        retrieve_ms=outcome["timing_ms"]["retrieve"],
+        generate_ms=outcome["timing_ms"]["generate"],
+        cache_hit=usage.get("cache_hit"),
+        model_attempts=usage.get("attempts", 0),
+        prompt_tokens=prompt_tokens,
+        output_tokens=output_tokens,
+        total_tokens=(
+            None if prompt_tokens is None else prompt_tokens + (output_tokens or 0)
+        ),
+    )
 
     return jsonify(
         {
@@ -101,6 +183,8 @@ def ask():
             "best_distance": round(outcome["best_distance"], 4),
             "threshold": outcome["threshold"],
             "corpus": config.CORPUS,
+            "request_id": base["request_id"],
+            "latency_ms": latency,
         }
     )
 
