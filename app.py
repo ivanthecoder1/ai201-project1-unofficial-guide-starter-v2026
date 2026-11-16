@@ -201,14 +201,22 @@ def ask_pipeline(
     """
     from store import search
     import gate
-    from generate import answer_from_chunks, build_prompt
+    from generate import answer_from_chunks, build_prompt, last_call
 
+    # Capstone instrumentation: wall-clock time per stage, in milliseconds.
+    # "retrieve" is embedding the question + the Chroma query; "generate" is
+    # building the prompt + the Gemini call (including any rate-limit waits).
+    timing_ms = {"retrieve": None, "generate": None}
+
+    t0 = time.perf_counter()
     results = search(
         question,
         top_k=top_k or config.TOP_K,
         corpus=corpus or config.CORPUS,
         variant=variant,
     )
+    timing_ms["retrieve"] = round((time.perf_counter() - t0) * 1000, 1)
+
     decision = gate.check(results, threshold=threshold)
     if on_gate is not None:
         on_gate(decision)
@@ -220,6 +228,12 @@ def ask_pipeline(
         "threshold": decision.threshold,
         "sources": [],
         "prompt": None,
+        # Nearest-first, unlike "sources" (which is de-duplicated and sorted).
+        "retrieved": [
+            {"label": r.label, "distance": round(r.distance, 4)} for r in results
+        ],
+        "timing_ms": timing_ms,
+        "usage": None,
     }
 
     if not decision.passed:
@@ -231,7 +245,10 @@ def ask_pipeline(
         on_prompt(prompt)
 
     outcome["prompt"] = prompt
+    t1 = time.perf_counter()
     outcome["answer"] = answer_from_chunks(question, results)
+    timing_ms["generate"] = round((time.perf_counter() - t1) * 1000, 1)
+    outcome["usage"] = last_call()
     outcome["sources"] = sorted({r.source for r in results})
     return outcome
 

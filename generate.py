@@ -32,6 +32,7 @@ import hashlib
 import json
 import os
 import sys
+import threading
 import time
 
 import config
@@ -43,6 +44,33 @@ _session_output_tokens = 0
 _cache_hits = 0
 _client = None
 _budget_warned = False
+
+# Capstone: what the most recent generate() call on THIS thread used. The
+# session totals above are shared by every request the server handles, so a
+# before/after difference of them is wrong as soon as two requests overlap.
+# This is per-thread, so each request's log record gets its own numbers.
+_last = threading.local()
+
+
+def _reset_last() -> None:
+    _last.cache_hit = False
+    _last.attempts = 0
+    _last.prompt_tokens = 0
+    _last.output_tokens = 0
+
+
+def last_call() -> dict:
+    """Usage of the most recent generate() call on this thread.
+
+    `attempts` counts requests actually sent to the service (retries after a
+    rate limit included). A cache hit has attempts 0 and no tokens.
+    """
+    return {
+        "cache_hit": getattr(_last, "cache_hit", False),
+        "attempts": getattr(_last, "attempts", 0),
+        "prompt_tokens": getattr(_last, "prompt_tokens", 0),
+        "output_tokens": getattr(_last, "output_tokens", 0),
+    }
 
 
 class QuotaGuard(Exception):
@@ -140,8 +168,12 @@ def _record_tokens(response) -> None:
         meta = getattr(response, "usage_metadata", None)
         if meta is None:
             return
-        _session_prompt_tokens += int(getattr(meta, "prompt_token_count", 0) or 0)
-        _session_output_tokens += int(getattr(meta, "candidates_token_count", 0) or 0)
+        p = int(getattr(meta, "prompt_token_count", 0) or 0)
+        o = int(getattr(meta, "candidates_token_count", 0) or 0)
+        _session_prompt_tokens += p
+        _session_output_tokens += o
+        _last.prompt_tokens = getattr(_last, "prompt_tokens", 0) + p
+        _last.output_tokens = getattr(_last, "output_tokens", 0) + o
     except Exception:
         pass  # accounting never breaks the thing it is accounting for
 
@@ -215,6 +247,7 @@ def generate(prompt: str, system: str | None = None, cache: bool = True) -> str:
     """
     global _session_calls, _cache_hits
 
+    _reset_last()
     use_cache = cache and config.CACHE_ENABLED
     key = _cache_key(prompt, system)
 
@@ -222,6 +255,7 @@ def generate(prompt: str, system: str | None = None, cache: bool = True) -> str:
         hit = _cache_read(key)
         if hit is not None:
             _cache_hits += 1
+            _last.cache_hit = True
             return hit
 
     _check_budget()
@@ -233,6 +267,7 @@ def generate(prompt: str, system: str | None = None, cache: bool = True) -> str:
             client = _get_client()
             _call_times.append(time.monotonic())
             _session_calls += 1
+            _last.attempts += 1
 
             kwargs = {"model": config.MODEL, "contents": prompt}
             if system:
