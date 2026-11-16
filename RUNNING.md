@@ -255,3 +255,83 @@ units.
 
 `results/` is deliberately **not** in `.gitignore`. Your run logs are evidence
 that the test actually happened, and they're part of what gets graded.
+
+---
+
+## Capstone run path (Path B — local with logs)
+
+The capstone runs locally as an HTTP service. It is **not** hosted: the
+embedding model runs in-process, and the free host's 512 MB is too tight for
+it alongside Chroma.
+
+### The command
+
+After the one-time setup below, this single command starts the service:
+
+```bash
+python serve.py
+```
+
+It listens on `http://localhost:5000` (set `PORT` to change it). Every
+`POST /ask` writes one JSON line to `logs/requests.jsonl`.
+
+### Environment
+
+| Thing | Value |
+|---|---|
+| Python | 3.13 (tested on 3.13.15, Windows 11). 3.11+ should work; 3.14 is untested. |
+| Dependencies | `requirements-lock.txt`: exact pins from `pip freeze` of the working venv. `requirements.txt` holds the looser ranges the starter shipped with. |
+| Embedding model | `all-MiniLM-L6-v2` (ONNX), downloaded by Chroma on first use from `chroma-onnx-models.s3.amazonaws.com`. Download is 83 MB (`onnx.tar.gz`); 91 MB `model.onnx` once extracted; about 170 MB on disk in `~/.cache/chroma/onnx_models/`. |
+| Generation | Gemini, model `gemini-3.5-flash-lite` (`config.MODEL`), through the key in `.env`. |
+| Vector index | `chroma_db/`, built locally by `python app.py index`. Not committed. |
+
+### One-time setup, from a clean checkout
+
+**Windows (PowerShell)**
+
+```powershell
+git clone <this repo> unofficial-guide
+cd unofficial-guide
+py -3.13 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements-lock.txt
+copy .env.example .env          # paste your GEMINI_API_KEY into .env
+python app.py index             # downloads the embedding model the first time
+python serve.py
+```
+
+**macOS / Linux**
+
+```bash
+git clone <this repo> unofficial-guide && cd unofficial-guide
+python3.13 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-lock.txt
+cp .env.example .env            # paste your GEMINI_API_KEY into .env
+python app.py index
+python serve.py
+```
+
+### Talking to it, and reading the record back
+
+From a second terminal (venv active):
+
+```bash
+python tools/drive.py                  # 5 in-scope + 5 out-of-scope questions
+python tools/drive.py --set bad        # 6 malformed requests, each should get a 400
+python tools/log_summary.py            # latency, stage timings, tokens per request
+python tools/log_summary.py --paste 12 # raw records, for the README
+```
+
+For a cost measurement, start the server with the response cache off, or
+repeated questions get served from `.cache/` for 0 tokens:
+
+```powershell
+$env:AI201_CACHE = "0"; python serve.py
+```
+
+```bash
+AI201_CACHE=0 python serve.py
+```
+
+`AI201_LOG_PATH` sends the log somewhere other than `logs/requests.jsonl`.
+That's useful for keeping a throwaway test session out of the committed record.
