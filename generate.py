@@ -59,6 +59,12 @@ def _reset_last() -> None:
     _last.output_tokens = 0
 
 
+def reset_last_call() -> None:
+    """Clear this thread's last-call record, so a stage that fails before
+    reaching generate() doesn't report the previous request's numbers."""
+    _reset_last()
+
+
 def last_call() -> dict:
     """Usage of the most recent generate() call on this thread.
 

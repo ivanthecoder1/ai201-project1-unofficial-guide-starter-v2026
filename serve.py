@@ -126,15 +126,31 @@ def ask():
             400,
         )
 
+    # Capstone improvement: the pipeline fills `trace` as it goes, so if it
+    # raises, the error record still says how far it got — retrieval time,
+    # what was retrieved, how long the model call took and how many attempts
+    # were sent — instead of only the exception.
+    trace: dict = {}
     try:
-        outcome = ask_pipeline(question, corpus=config.CORPUS)
+        outcome = ask_pipeline(question, corpus=config.CORPUS, trace=trace)
     except Exception as exc:  # noqa: BLE001 — a reader gets this, not a traceback
+        timing = trace.get("timing_ms") or {}
+        usage = trace.get("usage") or {}
+        best = trace.get("best_distance")
         runlog.write(
             **base,
             status="error",
             http_status=500,
             question=question,
+            retrieved=trace.get("retrieved"),
+            best_distance=None if best is None else round(best, 4),
+            threshold=trace.get("threshold"),
             latency_ms=elapsed_ms(),
+            retrieve_ms=timing.get("retrieve"),
+            generate_ms=timing.get("generate"),
+            cache_hit=usage.get("cache_hit"),
+            model_attempts=usage.get("attempts"),
+            # Failed calls report no usage, so tokens stay null here.
             error_type=type(exc).__name__,
             error=str(exc),
         )

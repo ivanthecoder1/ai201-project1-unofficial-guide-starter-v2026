@@ -183,6 +183,7 @@ def ask_pipeline(
     threshold=None,
     on_gate=None,
     on_prompt=None,
+    trace=None,
 ):
     """Retrieve, gate, answer. Returns the outcome and prints nothing.
 
@@ -198,15 +199,23 @@ def ask_pipeline(
     decision as soon as it's made, and `on_prompt` is handed the assembled
     prompt just before it goes out — that's how `--show-prompt` shows you the
     prompt while the model is still thinking rather than after.
+
+    `trace` (capstone improvement): pass in a dict and this function fills it
+    in AS IT GOES. It is the same dict that gets returned. If a stage raises,
+    the caller still has everything recorded up to that point (stage timings,
+    what was retrieved, how many model calls were sent), instead of nothing.
     """
     from store import search
     import gate
-    from generate import answer_from_chunks, build_prompt, last_call
+    from generate import answer_from_chunks, build_prompt, last_call, reset_last_call
+
+    outcome = trace if trace is not None else {}
 
     # Capstone instrumentation: wall-clock time per stage, in milliseconds.
     # "retrieve" is embedding the question + the Chroma query; "generate" is
     # building the prompt + the Gemini call (including any rate-limit waits).
     timing_ms = {"retrieve": None, "generate": None}
+    outcome.update({"question": question, "timing_ms": timing_ms, "usage": None})
 
     t0 = time.perf_counter()
     results = search(
@@ -221,8 +230,7 @@ def ask_pipeline(
     if on_gate is not None:
         on_gate(decision)
 
-    outcome = {
-        "question": question,
+    outcome.update({
         "refused": not decision.passed,
         "best_distance": decision.best_distance,
         "threshold": decision.threshold,
@@ -232,9 +240,7 @@ def ask_pipeline(
         "retrieved": [
             {"label": r.label, "distance": round(r.distance, 4)} for r in results
         ],
-        "timing_ms": timing_ms,
-        "usage": None,
-    }
+    })
 
     if not decision.passed:
         outcome["answer"] = gate.REFUSAL
@@ -245,10 +251,14 @@ def ask_pipeline(
         on_prompt(prompt)
 
     outcome["prompt"] = prompt
+    reset_last_call()
     t1 = time.perf_counter()
-    outcome["answer"] = answer_from_chunks(question, results)
-    timing_ms["generate"] = round((time.perf_counter() - t1) * 1000, 1)
-    outcome["usage"] = last_call()
+    try:
+        outcome["answer"] = answer_from_chunks(question, results)
+    finally:
+        # Recorded whether the model call succeeded or raised.
+        timing_ms["generate"] = round((time.perf_counter() - t1) * 1000, 1)
+        outcome["usage"] = last_call()
     outcome["sources"] = sorted({r.source for r in results})
     return outcome
 
