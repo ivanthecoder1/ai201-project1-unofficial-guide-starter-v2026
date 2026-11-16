@@ -383,3 +383,48 @@ The original Criterion 5 could not be measured from the evaluation output becaus
 ## What I'd Do Differently
 
      I would write Criterion 5 differently from the beginning. The original criterion depended on retrieval ranking, but the evaluation output did not preserve the ranking, so there was no reliable way to determine whether the correct source appeared in the top three. I would instead define the criterion around an observable outcome, such as whether the generated answer identifies the correct source document.
+
+---
+
+## Capstone
+
+**What This Extends**
+
+This extends my Unit 1–2 project, The Unofficial Guide: a RAG system over the `advice_threads` corpus that retrieves student forum threads with Chroma, refuses questions whose best distance is over 0.7, and answers the rest with Gemini while citing a source. Before this unit it only ran in my editor, one question at a time. `serve.py` was a bare Flask wrapper with no logging, no timing, and no metrics, so once a request finished there was no record of it. What's new is the operational layer: a documented local run path, a structured JSONL log with one record per `/ask` request (failed requests included), timing for each stage (retrieval vs. generation), and a per-request token count read back from the Gemini response, which my cost number comes from.
+
+**The Shape**
+
+Shape A: deploy and instrument, on Path B (local with logs). I'm adding one thing: instrumentation around the existing `/ask` path. That means a structured log record per request, with stage timings and token usage, plus two small tools, one that sends a fixed set of requests to the running server and one that reads the log back into numbers.
+
+Out of scope:
+- I'm not changing retrieval, chunking, the relevance cutoff, or the prompt. The answers should be the same as in Unit 2; only what gets recorded about them changes.
+- I'm not adding failure hardening like a timeout on the Gemini call or a fallback when the API is down. That's Shape B. Failures get *logged*, not *handled* differently.
+- I'm not hosting it (Path A) and I'm not logging the CLI (`app.py ask`) or `run_eval.py`. The server is the run path, and only server requests are logged.
+
+**Running It**
+
+Path B: local with logs. The single start command, the Python version, the pinned dependencies, and the model download are in [RUNNING.md](RUNNING.md) under "Capstone run path".
+
+**Instrumentation**
+
+<!-- Milestone 3: what each record holds, then 10+ entries plus at least one failed run, pasted as text. -->
+
+**What It Costs**
+
+<!-- Milestone 3 / 7: measured per-run tokens and seconds over 10 runs, method, and the 100-people-a-day arithmetic. -->
+
+**Run Log and Verdicts**
+
+<!-- Milestone 5 / 6 -->
+
+**The Improvement**
+
+<!-- Milestone 6 -->
+
+**What's Still Broken**
+
+<!-- Milestone 7 -->
+
+**How I Used AI**
+
+<!-- Milestone 7: two specific moments. -->
