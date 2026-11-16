@@ -83,11 +83,24 @@ def main():
     p.add_argument("--repeat", type=int, default=1, help="send the whole set this many times")
     p.add_argument("--rpm", type=float, default=0, help="pace to this many requests/minute (0 = as fast as answered)")
     p.add_argument("--timeout", type=float, default=120, help="client timeout per request, seconds")
+    p.add_argument("--manifest", type=Path, default=None,
+                   help="append one JSON line per request SENT (client side), so the server log can be checked against it")
+    p.add_argument("--phase", default="main", help="tag written into the manifest, e.g. main or model_error")
+    p.add_argument("--limit", type=int, default=0, help="send only the first N requests of the set")
     args = p.parse_args()
 
     items = build_requests(args.set) * args.repeat
+    if args.limit:
+        items = items[: args.limit]
     gap = 60.0 / args.rpm if args.rpm > 0 else 0
     print(f"Sending {len(items)} request(s) to {args.url}\n")
+
+    def note(entry: dict) -> None:
+        if args.manifest is None:
+            return
+        args.manifest.parent.mkdir(parents=True, exist_ok=True)
+        with args.manifest.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"phase": args.phase, "set": args.set, **entry}, ensure_ascii=False) + "\n")
 
     counts: dict[int, int] = {}
     for i, (label, body) in enumerate(items, 1):
@@ -97,8 +110,12 @@ def main():
         except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
             print(f"{i:>3}  ---  client error: {exc}   ({label[:60]})")
             counts[-1] = counts.get(-1, 0) + 1
+            note({"label": label, "http_status": None, "request_id": None,
+                  "client_ms": None, "client_error": str(exc)})
             continue
         counts[status] = counts.get(status, 0) + 1
+        note({"label": label, "http_status": status, "request_id": data.get("request_id"),
+              "client_ms": round(ms, 1), "client_error": None})
         kind = "refused" if data.get("refused") else ("answered" if status == 200 else data.get("error", "")[:40])
         print(f"{i:>3}  {status}  {ms:7.0f} ms  {kind:<10}  {data.get('request_id', '-')}  {label[:60]}")
         if gap:
