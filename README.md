@@ -463,7 +463,10 @@ The session below is the full log from 2026-11-16 (`python tools/log_summary.py 
 
 **What It Costs**
 
-<!-- Milestone 3 / 7: measured per-run tokens and seconds over 10 runs, method, and the 100-people-a-day arithmetic. -->
+Per-run cost: 910.1 tokens per answered request (851 input + 59.1 output) and 1.14 s, mean of 10 live runs. Refused and rejected requests cost 0 tokens.
+How you measured it: 10 /ask requests with AI201_CACHE=0. Token counts come from Gemini’s usage_metadata on each response (logged as prompt_tokens and output_tokens), averaged by python tools/log_summary.py.
+
+The 100-people-a-day arithmetic officially belongs to Mil
 
 **Run Log and Verdicts**
 
