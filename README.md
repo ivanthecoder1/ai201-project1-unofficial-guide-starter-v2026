@@ -470,7 +470,77 @@ The 100-people-a-day arithmetic officially belongs to Mil
 
 **Run Log and Verdicts**
 
-<!-- Milestone 5 / 6 -->
+Each trial is one command: `python tools/run_trial.py --label before --trial N` (`tools/run_trial.py::main`). It starts a fresh `serve.py` with the cache off (`AI201_CACHE=0`), sends the 21 standard requests with `tools/drive.py` (5 in-scope questions ×2, 5 out-of-scope, 6 malformed), restarts the server with an invalid `GEMINI_API_KEY`, and sends 1 in-scope question as the deliberate model failure. It then scores the trial with `tools/check_criteria.py::check`. The three trials ran back to back on 2026-11-16 with nothing changed in between. Every file each trial produced is in `results/capstone/`: `before_trialN.jsonl` is the server log written by `runlog.py::write`, `before_trialN.manifest.jsonl` is what the client sent and got back, and `before_trialN_check.txt` holds the scores.
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Every `/ask` request produces exactly one log record | 21 of 21 | 21/21 | 21/21 | 21/21 | |
+| 2. Every log record contains all 23 required fields | 21 of 21 | 21/21 | 21/21 | 21/21 | |
+| 3. Request and processing times are recorded accurately | 21 of 21 | 21/21 | 20/21 | 21/21 | |
+| 4. Token usage is recorded and calculated correctly | 10 of 10 | 10/10 | 9/10 (9 of 9 answered) | 10/10 | |
+| 5. Failed requests are recorded with their error details | 7 of 7 | 7/7 | 7/7 | 7/7 | |
+
+Run 2's 9th request (in-scope, textbook-edition question) hit Gemini's free-tier quota: `429 RESOURCE_EXHAUSTED`. `generate.py::generate` retried 4 times (1 + 2 + 4 + 8 s backoff), gave up, and the server returned a 500 after 15.5 s. Only 9 of the 10 in-scope requests in run 2 produced an answer.
+
+Real output below is from **run 2** (`results/capstone/before_trial2.*`), the run with the miss.
+
+Scores for run 2, produced by `tools/check_criteria.py::main` (`before_trial2_check.txt`):
+
+```
+Trial log: C:\Users\ivanz\Downloads\Codepath AI 301\ai201-coursework\ai201-project1-unofficial-guide-starter-v2026\results\capstone\before_trial2.jsonl
+Requests sent (main phase): 21   records in log: 22
+
+C1  exactly one record per request ........ 21/21   (target 21 of 21)
+C2  all 23 fields in every record .......... 21/21   (target 21 of 21)
+C3  timings present / null as specified ... 20/21   (target 21 of 21)
+C4  token counts on answered requests ..... 9/9   (target 10 of 10)
+      null tokens on refused + rejected ... 11/11
+C5  failures recorded with details ........ 7/7   (target 7 of 7)
+
+Notes:
+  - C3: main-phase record 33d73b3c438c has status 'error'; the criterion doesn't say which stages it reached — counted as a fail
+  - C3: record 33d73b3c438c (error) timings: latency 15516.0, retrieve None, generate None
+  - Outside C1–C3's 21: the model-error record has latency_ms 1287.4, retrieve_ms None, generate_ms None, error_type 'ClientError'
+```
+
+**Criterion 1: one record per request.** The client manifest (`tools/drive.py::main`, `--manifest`) has 21 main-phase requests and the server log has 22 records (21 + 1 model-error request). Every manifest `request_id` appears exactly once in the log. The first manifest line (its `request_id` is also the first record under criterion 3):
+
+```json
+{"phase": "main", "set": "in", "label": "What can a student do if they are not getting along with their roommate?", "http_status": 200, "request_id": "2ecedbb8861b", "client_ms": 1784.2, "client_error": null}
+```
+
+**Criterion 2: all 23 fields, `null` when they don't apply.** A rejected request, written by `serve.py::ask` → `runlog.py::write`:
+
+```json
+{"ts": "2026-11-16T04:31:12.061+00:00", "request_id": "1feb697b05f9", "route": "/ask", "status": "rejected", "http_status": 400, "question": "42", "answer": null, "sources": null, "retrieved": null, "best_distance": null, "threshold": null, "latency_ms": 0.0, "retrieve_ms": null, "generate_ms": null, "cache_hit": null, "model_attempts": null, "prompt_tokens": null, "output_tokens": null, "total_tokens": null, "model": "gemini-3.5-flash-lite", "corpus": "advice_threads", "error_type": "question_not_string", "error": "no usable question in request body"}
+```
+
+**Criterion 3: timings.** A passing answered record and a passing refused record. Note the first request of the run, with retrieval at cold start:
+
+```json
+{"ts": "2026-11-16T04:30:47.583+00:00", "request_id": "2ecedbb8861b", "route": "/ask", "status": "answered", "http_status": 200, "question": "What can a student do if they are not getting along with their roommate?", "answer": "A student should talk to their RA early and frame the conversation as needing help to sort things out rather than asking to move immediately (*thread_roommate_conflict.txt*). Additionally, it is helpful to write down specific details and examples before the meeting (*thread_roommate_conflict.txt*).", "sources": ["thread_commuting.txt", "thread_group_project.txt", "thread_office_hours_etiquette.txt", "thread_roommate_conflict.txt", "thread_study_spots.txt"], "retrieved": [{"label": "thread_roommate_conflict.txt#0", "distance": 0.3963}, {"label": "thread_group_project.txt#0", "distance": 0.5757}, {"label": "thread_office_hours_etiquette.txt#0", "distance": 0.7016}, {"label": "thread_study_spots.txt#0", "distance": 0.704}, {"label": "thread_commuting.txt#0", "distance": 0.7499}], "best_distance": 0.3963, "threshold": 0.7, "latency_ms": 1769.1, "retrieve_ms": 158.8, "generate_ms": 1608.8, "cache_hit": false, "model_attempts": 1, "prompt_tokens": 906, "output_tokens": 62, "total_tokens": 968, "model": "gemini-3.5-flash-lite", "corpus": "advice_threads", "error_type": null, "error": null}
+{"ts": "2026-11-16T04:31:11.732+00:00", "request_id": "7aed16a3ab5e", "route": "/ask", "status": "refused", "http_status": 200, "question": "What is the capital of Mongolia?", "answer": "I don't have enough information about that.", "sources": [], "retrieved": [{"label": "thread_bike_commute.txt#1", "distance": 0.8902}, {"label": "thread_meal_plan_tier.txt#1", "distance": 0.9114}, {"label": "thread_laptop_specs.txt#0", "distance": 0.9479}, {"label": "thread_winter_advice.txt#0", "distance": 0.9645}, {"label": "thread_laundry_timing.txt#0", "distance": 0.968}], "best_distance": 0.8902, "threshold": 0.7, "latency_ms": 28.9, "retrieve_ms": 28.8, "generate_ms": null, "cache_hit": null, "model_attempts": 0, "prompt_tokens": null, "output_tokens": null, "total_tokens": null, "model": "gemini-3.5-flash-lite", "corpus": "advice_threads", "error_type": null, "error": null}
+```
+
+The failing record. Status `error`, `latency_ms` 15516, but `retrieve_ms` and `generate_ms` are `null` even though retrieval ran before the model call failed:
+
+```json
+{"ts": "2026-11-16T04:30:55.289+00:00", "request_id": "33d73b3c438c", "route": "/ask", "status": "error", "http_status": 500, "question": "Who should a student ask about whether they need a specific edition of a textbook?", "answer": null, "sources": null, "retrieved": null, "best_distance": null, "threshold": null, "latency_ms": 15516.0, "retrieve_ms": null, "generate_ms": null, "cache_hit": null, "model_attempts": null, "prompt_tokens": null, "output_tokens": null, "total_tokens": null, "model": "gemini-3.5-flash-lite", "corpus": "advice_threads", "error_type": "RuntimeError", "error": "Still rate limited after 4 attempts. Wait a minute and try again — your key is fine.\nLast error: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit:…"}
+```
+
+**Criterion 4: tokens.** An answered record (`prompt_tokens` + `output_tokens` = `total_tokens`), produced by `app.py::ask_pipeline` → `generate.py::last_call`:
+
+```json
+{"ts": "2026-11-16T04:30:47.583+00:00", "request_id": "2ecedbb8861b", "route": "/ask", "status": "answered", "http_status": 200, "question": "What can a student do if they are not getting along with their roommate?", "answer": "A student should talk to their RA early and frame the conversation as needing help to sort things out rather than asking to move immediately (*thread_roommate_conflict.txt*). Additionally, it is helpful to write down specific details and examples before the meeting (*thread_roommate_conflict.txt*).", "sources": ["thread_commuting.txt", "thread_group_project.txt", "thread_office_hours_etiquette.txt", "thread_roommate_conflict.txt", "thread_study_spots.txt"], "retrieved": [{"label": "thread_roommate_conflict.txt#0", "distance": 0.3963}, {"label": "thread_group_project.txt#0", "distance": 0.5757}, {"label": "thread_office_hours_etiquette.txt#0", "distance": 0.7016}, {"label": "thread_study_spots.txt#0", "distance": 0.704}, {"label": "thread_commuting.txt#0", "distance": 0.7499}], "best_distance": 0.3963, "threshold": 0.7, "latency_ms": 1769.1, "retrieve_ms": 158.8, "generate_ms": 1608.8, "cache_hit": false, "model_attempts": 1, "prompt_tokens": 906, "output_tokens": 62, "total_tokens": 968, "model": "gemini-3.5-flash-lite", "corpus": "advice_threads", "error_type": null, "error": null}
+```
+
+Run 2 has 9 answered records, all with correct token counts. The 10th in-scope request is the `error` record above, with `null` tokens and `model_attempts: null`, even though 4 calls were sent to Gemini.
+
+**Criterion 5: failures recorded.** The 6 malformed requests are all `rejected` with HTTP 400 and an `error_type` (one is shown under criterion 2). The deliberate model failure (invalid API key):
+
+```json
+{"ts": "2026-11-16T04:31:13.551+00:00", "request_id": "63dec96ac870", "route": "/ask", "status": "error", "http_status": 500, "question": "What can a student do if they are not getting along with their roommate?", "answer": null, "sources": null, "retrieved": null, "best_distance": null, "threshold": null, "latency_ms": 1287.4, "retrieve_ms": null, "generate_ms": null, "cache_hit": null, "model_attempts": null, "prompt_tokens": null, "output_tokens": null, "total_tokens": null, "model": "gemini-3.5-flash-lite", "corpus": "advice_threads", "error_type": "ClientError", "error": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"}
+```
 
 **The Improvement**
 

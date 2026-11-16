@@ -1,0 +1,22 @@
+{"phase": "main", "set": "in", "label": "What can a student do if they are not getting along with their roommate?", "http_status": 200, "request_id": "772e9f5e25ef", "client_ms": 1969.0, "client_error": null}
+{"phase": "main", "set": "in", "label": "What determines whether a student can receive an extension for late work?", "http_status": 200, "request_id": "411500d5226c", "client_ms": 728.5, "client_error": null}
+{"phase": "main", "set": "in", "label": "What are study spots students can use besides the library?", "http_status": 200, "request_id": "313ceb08879b", "client_ms": 803.4, "client_error": null}
+{"phase": "main", "set": "in", "label": "Who should a student ask about whether they need a specific edition of a textbook?", "http_status": 200, "request_id": "cc50dd8c211c", "client_ms": 484.4, "client_error": null}
+{"phase": "main", "set": "in", "label": "How should a student handle an absent teammate in a group project?", "http_status": 200, "request_id": "62d0f8f8a3af", "client_ms": 710.4, "client_error": null}
+{"phase": "main", "set": "in", "label": "What can a student do if they are not getting along with their roommate?", "http_status": 200, "request_id": "435cdb7fdf03", "client_ms": 684.1, "client_error": null}
+{"phase": "main", "set": "in", "label": "What determines whether a student can receive an extension for late work?", "http_status": 200, "request_id": "67298da061be", "client_ms": 553.4, "client_error": null}
+{"phase": "main", "set": "in", "label": "What are study spots students can use besides the library?", "http_status": 200, "request_id": "8dee40a171ad", "client_ms": 799.6, "client_error": null}
+{"phase": "main", "set": "in", "label": "Who should a student ask about whether they need a specific edition of a textbook?", "http_status": 200, "request_id": "8d80ea976687", "client_ms": 531.9, "client_error": null}
+{"phase": "main", "set": "in", "label": "How should a student handle an absent teammate in a group project?", "http_status": 200, "request_id": "43f3ae350fe4", "client_ms": 852.5, "client_error": null}
+{"phase": "main", "set": "out", "label": "What is the capital of Mongolia?", "http_status": 200, "request_id": "0a8d12ec0129", "client_ms": 53.0, "client_error": null}
+{"phase": "main", "set": "out", "label": "How do I change the oil in a diesel engine?", "http_status": 200, "request_id": "a8b0449f04db", "client_ms": 38.6, "client_error": null}
+{"phase": "main", "set": "out", "label": "Who won the 1994 World Cup?", "http_status": 200, "request_id": "112e5b58ebc4", "client_ms": 38.8, "client_error": null}
+{"phase": "main", "set": "out", "label": "What is the recommended dosage of ibuprofen for a headache?", "http_status": 200, "request_id": "84da1f0ba5e4", "client_ms": 55.8, "client_error": null}
+{"phase": "main", "set": "out", "label": "How do I write a for loop in Rust?", "http_status": 200, "request_id": "302b66b5e554", "client_ms": 56.8, "client_error": null}
+{"phase": "main", "set": "bad", "label": "empty body", "http_status": 400, "request_id": "e2bf42fc6c8b", "client_ms": 15.6, "client_error": null}
+{"phase": "main", "set": "bad", "label": "not JSON", "http_status": 400, "request_id": "82d91f8071dc", "client_ms": 11.4, "client_error": null}
+{"phase": "main", "set": "bad", "label": "JSON list, not object", "http_status": 400, "request_id": "559ab87306a4", "client_ms": 1.0, "client_error": null}
+{"phase": "main", "set": "bad", "label": "missing question", "http_status": 400, "request_id": "bccda80643f9", "client_ms": 14.0, "client_error": null}
+{"phase": "main", "set": "bad", "label": "question is a number", "http_status": 400, "request_id": "3c828f905cbc", "client_ms": 15.1, "client_error": null}
+{"phase": "main", "set": "bad", "label": "blank question", "http_status": 400, "request_id": "3ae428a13ebf", "client_ms": 15.6, "client_error": null}
+{"phase": "model_error", "set": "in", "label": "What can a student do if they are not getting along with their roommate?", "http_status": 500, "request_id": "1f0c02c9f562", "client_ms": 1306.8, "client_error": null}

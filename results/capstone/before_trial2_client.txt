@@ -1,0 +1,50 @@
+$ python tools/drive.py --set in --repeat 2
+Sending 10 request(s) to http://127.0.0.1:5101/ask
+
+  1  200     1784 ms  answered    2ecedbb8861b  What can a student do if they are not getting along with the
+  2  200      567 ms  answered    1e037eeb4d2b  What determines whether a student can receive an extension f
+  3  200     1279 ms  answered    0c4b21f66f44  What are study spots students can use besides the library?
+  4  200      680 ms  answered    8b7d09eafec4  Who should a student ask about whether they need a specific 
+  5  200      673 ms  answered    9547694998c2  How should a student handle an absent teammate in a group pr
+  6  200     1371 ms  answered    102c2b99f5d0  What can a student do if they are not getting along with the
+  7  200      675 ms  answered    fe42b3cb05f7  What determines whether a student can receive an extension f
+  8  200      668 ms  answered    428ee073143d  What are study spots students can use besides the library?
+  9  500    15536 ms  RuntimeError: Still rate limited after 4  33d73b3c438c  Who should a student ask about whether they need a specific 
+ 10  200      801 ms  answered    84ed3c77d5ed  How should a student handle an absent teammate in a group pr
+
+Done. 200: 9, 500: 1
+Read it back with:  python tools/log_summary.py
+
+$ python tools/drive.py --set out
+Sending 5 request(s) to http://127.0.0.1:5101/ask
+
+  1  200       44 ms  refused     7aed16a3ab5e  What is the capital of Mongolia?
+  2  200       37 ms  refused     8db3a761b7b6  How do I change the oil in a diesel engine?
+  3  200       49 ms  refused     efa6b2ffcaac  Who won the 1994 World Cup?
+  4  200       31 ms  refused     fa7f89fd76a8  What is the recommended dosage of ibuprofen for a headache?
+  5  200       47 ms  refused     ddf4eb539569  How do I write a for loop in Rust?
+
+Done. 200: 5
+Read it back with:  python tools/log_summary.py
+
+$ python tools/drive.py --set bad
+Sending 6 request(s) to http://127.0.0.1:5101/ask
+
+  1  400       15 ms  Send JSON with a question in it, like {"  97559533d9d9  empty body
+  2  400        1 ms  Send JSON with a question in it, like {"  e203c838814d  not JSON
+  3  400        1 ms  Send JSON with a question in it, like {"  5da7eff45858  JSON list, not object
+  4  400        1 ms  Send JSON with a question in it, like {"  fd6f2a734f60  missing question
+  5  400        1 ms  Send JSON with a question in it, like {"  1feb697b05f9  question is a number
+  6  400        1 ms  Send JSON with a question in it, like {"  7fe123da15e5  blank question
+
+Done. 400: 6
+Read it back with:  python tools/log_summary.py
+
+$ python tools/drive.py --set in --limit 1 --phase model_error
+Sending 1 request(s) to http://127.0.0.1:5101/ask
+
+  1  500     1305 ms  ClientError: 400 INVALID_ARGUMENT. {'err  63dec96ac870  What can a student do if they are not getting along with the
+
+Done. 500: 1
+Read it back with:  python tools/log_summary.py
+
