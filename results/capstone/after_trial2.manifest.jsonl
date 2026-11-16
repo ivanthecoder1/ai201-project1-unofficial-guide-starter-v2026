@@ -1,0 +1,22 @@
+{"phase": "main", "set": "in", "label": "What can a student do if they are not getting along with their roommate?", "http_status": 200, "request_id": "f93aa9b51ba1", "client_ms": 2177.7, "client_error": null}
+{"phase": "main", "set": "in", "label": "What determines whether a student can receive an extension for late work?", "http_status": 200, "request_id": "ead11cb0d42f", "client_ms": 686.3, "client_error": null}
+{"phase": "main", "set": "in", "label": "What are study spots students can use besides the library?", "http_status": 200, "request_id": "5a89a51b1473", "client_ms": 712.3, "client_error": null}
+{"phase": "main", "set": "in", "label": "Who should a student ask about whether they need a specific edition of a textbook?", "http_status": 200, "request_id": "959edd518433", "client_ms": 569.7, "client_error": null}
+{"phase": "main", "set": "in", "label": "How should a student handle an absent teammate in a group project?", "http_status": 200, "request_id": "36de4fb9d317", "client_ms": 793.1, "client_error": null}
+{"phase": "main", "set": "in", "label": "What can a student do if they are not getting along with their roommate?", "http_status": 200, "request_id": "6eaa0188407d", "client_ms": 3966.8, "client_error": null}
+{"phase": "main", "set": "in", "label": "What determines whether a student can receive an extension for late work?", "http_status": 200, "request_id": "af45f991f40c", "client_ms": 4031.8, "client_error": null}
+{"phase": "main", "set": "in", "label": "What are study spots students can use besides the library?", "http_status": 200, "request_id": "a9c027367e84", "client_ms": 8061.2, "client_error": null}
+{"phase": "main", "set": "in", "label": "Who should a student ask about whether they need a specific edition of a textbook?", "http_status": 200, "request_id": "464e6f366646", "client_ms": 563.0, "client_error": null}
+{"phase": "main", "set": "in", "label": "How should a student handle an absent teammate in a group project?", "http_status": 200, "request_id": "fcd19774a854", "client_ms": 1926.4, "client_error": null}
+{"phase": "main", "set": "out", "label": "What is the capital of Mongolia?", "http_status": 200, "request_id": "f3eb2054a926", "client_ms": 44.7, "client_error": null}
+{"phase": "main", "set": "out", "label": "How do I change the oil in a diesel engine?", "http_status": 200, "request_id": "23d05f807380", "client_ms": 38.5, "client_error": null}
+{"phase": "main", "set": "out", "label": "Who won the 1994 World Cup?", "http_status": 200, "request_id": "159baeef27b9", "client_ms": 55.6, "client_error": null}
+{"phase": "main", "set": "out", "label": "What is the recommended dosage of ibuprofen for a headache?", "http_status": 200, "request_id": "7febc82b9091", "client_ms": 47.7, "client_error": null}
+{"phase": "main", "set": "out", "label": "How do I write a for loop in Rust?", "http_status": 200, "request_id": "a2f069a43150", "client_ms": 38.6, "client_error": null}
+{"phase": "main", "set": "bad", "label": "empty body", "http_status": 400, "request_id": "6831f088f624", "client_ms": 15.6, "client_error": null}
+{"phase": "main", "set": "bad", "label": "not JSON", "http_status": 400, "request_id": "8d381053f21e", "client_ms": 1.1, "client_error": null}
+{"phase": "main", "set": "bad", "label": "JSON list, not object", "http_status": 400, "request_id": "a86819e42bf9", "client_ms": 14.1, "client_error": null}
+{"phase": "main", "set": "bad", "label": "missing question", "http_status": 400, "request_id": "c2786322530d", "client_ms": 15.4, "client_error": null}
+{"phase": "main", "set": "bad", "label": "question is a number", "http_status": 400, "request_id": "26d7c53423c6", "client_ms": 14.5, "client_error": null}
+{"phase": "main", "set": "bad", "label": "blank question", "http_status": 400, "request_id": "b12172b497ce", "client_ms": 14.8, "client_error": null}
+{"phase": "model_error", "set": "in", "label": "What can a student do if they are not getting along with their roommate?", "http_status": 500, "request_id": "4947438d107c", "client_ms": 1281.8, "client_error": null}

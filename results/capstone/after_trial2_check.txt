@@ -1,0 +1,12 @@
+Trial log: C:\Users\ivanz\Downloads\Codepath AI 301\ai201-coursework\ai201-project1-unofficial-guide-starter-v2026\results\capstone\after_trial2.jsonl
+Requests sent (main phase): 21   records in log: 22
+
+C1  exactly one record per request ........ 21/21   (target 21 of 21)
+C2  all 23 fields in every record .......... 21/21   (target 21 of 21)
+C3  timings present / null as specified ... 21/21   (target 21 of 21)
+C4  token counts on answered requests ..... 10/10   (target 10 of 10; 10 of the in-scope requests were answered)
+      null tokens on refused + rejected ... 11/11
+C5  failures recorded with details ........ 7/7   (target 7 of 7)
+
+Notes:
+  - Outside C1–C3's 21: the model-error record has latency_ms 1263.9, retrieve_ms 157.8, generate_ms 1103.6, error_type 'ClientError'

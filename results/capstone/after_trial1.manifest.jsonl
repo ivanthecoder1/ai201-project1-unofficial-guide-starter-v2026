@@ -1,0 +1,22 @@
+{"phase": "main", "set": "in", "label": "What can a student do if they are not getting along with their roommate?", "http_status": 200, "request_id": "6f66f33f5123", "client_ms": 2065.7, "client_error": null}
+{"phase": "main", "set": "in", "label": "What determines whether a student can receive an extension for late work?", "http_status": 200, "request_id": "4cb98f5d0f7d", "client_ms": 732.4, "client_error": null}
+{"phase": "main", "set": "in", "label": "What are study spots students can use besides the library?", "http_status": 200, "request_id": "0e18a85a1e49", "client_ms": 677.8, "client_error": null}
+{"phase": "main", "set": "in", "label": "Who should a student ask about whether they need a specific edition of a textbook?", "http_status": 200, "request_id": "b38fc617bc91", "client_ms": 670.9, "client_error": null}
+{"phase": "main", "set": "in", "label": "How should a student handle an absent teammate in a group project?", "http_status": 200, "request_id": "5a798a754305", "client_ms": 904.7, "client_error": null}
+{"phase": "main", "set": "in", "label": "What can a student do if they are not getting along with their roommate?", "http_status": 200, "request_id": "4d00dd16d62f", "client_ms": 783.9, "client_error": null}
+{"phase": "main", "set": "in", "label": "What determines whether a student can receive an extension for late work?", "http_status": 200, "request_id": "8acd747888bb", "client_ms": 939.9, "client_error": null}
+{"phase": "main", "set": "in", "label": "What are study spots students can use besides the library?", "http_status": 200, "request_id": "16cd912a8d84", "client_ms": 762.9, "client_error": null}
+{"phase": "main", "set": "in", "label": "Who should a student ask about whether they need a specific edition of a textbook?", "http_status": 200, "request_id": "548ba1a42dcf", "client_ms": 486.8, "client_error": null}
+{"phase": "main", "set": "in", "label": "How should a student handle an absent teammate in a group project?", "http_status": 200, "request_id": "97653e7292d9", "client_ms": 739.4, "client_error": null}
+{"phase": "main", "set": "out", "label": "What is the capital of Mongolia?", "http_status": 200, "request_id": "9a46a08c8a8c", "client_ms": 56.2, "client_error": null}
+{"phase": "main", "set": "out", "label": "How do I change the oil in a diesel engine?", "http_status": 200, "request_id": "2dc41d33c237", "client_ms": 38.2, "client_error": null}
+{"phase": "main", "set": "out", "label": "Who won the 1994 World Cup?", "http_status": 200, "request_id": "cee695551bd3", "client_ms": 39.8, "client_error": null}
+{"phase": "main", "set": "out", "label": "What is the recommended dosage of ibuprofen for a headache?", "http_status": 200, "request_id": "0fb4388e17b9", "client_ms": 39.3, "client_error": null}
+{"phase": "main", "set": "out", "label": "How do I write a for loop in Rust?", "http_status": 200, "request_id": "4e96a18e5955", "client_ms": 53.3, "client_error": null}
+{"phase": "main", "set": "bad", "label": "empty body", "http_status": 400, "request_id": "742eff70e68c", "client_ms": 14.7, "client_error": null}
+{"phase": "main", "set": "bad", "label": "not JSON", "http_status": 400, "request_id": "401b758b87d9", "client_ms": 1.1, "client_error": null}
+{"phase": "main", "set": "bad", "label": "JSON list, not object", "http_status": 400, "request_id": "be790470e2e4", "client_ms": 1.0, "client_error": null}
+{"phase": "main", "set": "bad", "label": "missing question", "http_status": 400, "request_id": "b769a5ce931c", "client_ms": 0.9, "client_error": null}
+{"phase": "main", "set": "bad", "label": "question is a number", "http_status": 400, "request_id": "0030d27fa08c", "client_ms": 22.8, "client_error": null}
+{"phase": "main", "set": "bad", "label": "blank question", "http_status": 400, "request_id": "755fddfee792", "client_ms": 15.8, "client_error": null}
+{"phase": "model_error", "set": "in", "label": "What can a student do if they are not getting along with their roommate?", "http_status": 500, "request_id": "0752b1dd8a64", "client_ms": 1311.2, "client_error": null}

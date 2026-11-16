@@ -1,0 +1,50 @@
+$ python tools/drive.py --set in --repeat 2
+Sending 10 request(s) to http://127.0.0.1:5101/ask
+
+  1  200     2066 ms  answered    6f66f33f5123  What can a student do if they are not getting along with the
+  2  200      732 ms  answered    4cb98f5d0f7d  What determines whether a student can receive an extension f
+  3  200      678 ms  answered    0e18a85a1e49  What are study spots students can use besides the library?
+  4  200      671 ms  answered    b38fc617bc91  Who should a student ask about whether they need a specific 
+  5  200      905 ms  answered    5a798a754305  How should a student handle an absent teammate in a group pr
+  6  200      784 ms  answered    4d00dd16d62f  What can a student do if they are not getting along with the
+  7  200      940 ms  answered    8acd747888bb  What determines whether a student can receive an extension f
+  8  200      763 ms  answered    16cd912a8d84  What are study spots students can use besides the library?
+  9  200      487 ms  answered    548ba1a42dcf  Who should a student ask about whether they need a specific 
+ 10  200      739 ms  answered    97653e7292d9  How should a student handle an absent teammate in a group pr
+
+Done. 200: 10
+Read it back with:  python tools/log_summary.py
+
+$ python tools/drive.py --set out
+Sending 5 request(s) to http://127.0.0.1:5101/ask
+
+  1  200       56 ms  refused     9a46a08c8a8c  What is the capital of Mongolia?
+  2  200       38 ms  refused     2dc41d33c237  How do I change the oil in a diesel engine?
+  3  200       40 ms  refused     cee695551bd3  Who won the 1994 World Cup?
+  4  200       39 ms  refused     0fb4388e17b9  What is the recommended dosage of ibuprofen for a headache?
+  5  200       53 ms  refused     4e96a18e5955  How do I write a for loop in Rust?
+
+Done. 200: 5
+Read it back with:  python tools/log_summary.py
+
+$ python tools/drive.py --set bad
+Sending 6 request(s) to http://127.0.0.1:5101/ask
+
+  1  400       15 ms  Send JSON with a question in it, like {"  742eff70e68c  empty body
+  2  400        1 ms  Send JSON with a question in it, like {"  401b758b87d9  not JSON
+  3  400        1 ms  Send JSON with a question in it, like {"  be790470e2e4  JSON list, not object
+  4  400        1 ms  Send JSON with a question in it, like {"  b769a5ce931c  missing question
+  5  400       23 ms  Send JSON with a question in it, like {"  0030d27fa08c  question is a number
+  6  400       16 ms  Send JSON with a question in it, like {"  755fddfee792  blank question
+
+Done. 400: 6
+Read it back with:  python tools/log_summary.py
+
+$ python tools/drive.py --set in --limit 1 --phase model_error
+Sending 1 request(s) to http://127.0.0.1:5101/ask
+
+  1  500     1311 ms  ClientError: 400 INVALID_ARGUMENT. {'err  0752b1dd8a64  What can a student do if they are not getting along with the
+
+Done. 500: 1
+Read it back with:  python tools/log_summary.py
+

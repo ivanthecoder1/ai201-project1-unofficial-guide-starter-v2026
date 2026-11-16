@@ -474,11 +474,11 @@ Each trial is one command: `python tools/run_trial.py --label before --trial N` 
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Every `/ask` request produces exactly one log record | 21 of 21 | 21/21 | 21/21 | 21/21 | |
-| 2. Every log record contains all 23 required fields | 21 of 21 | 21/21 | 21/21 | 21/21 | |
-| 3. Request and processing times are recorded accurately | 21 of 21 | 21/21 | 20/21 | 21/21 | |
-| 4. Token usage is recorded and calculated correctly | 10 of 10 | 10/10 | 9/10 (9 of 9 answered) | 10/10 | |
-| 5. Failed requests are recorded with their error details | 7 of 7 | 7/7 | 7/7 | 7/7 | |
+| 1. Every `/ask` request produces exactly one log record | 21 of 21 | 21/21 | 21/21 | 21/21 | MET |
+| 2. Every log record contains all 23 required fields | 21 of 21 | 21/21 | 21/21 | 21/21 | MET |
+| 3. Request and processing times are recorded accurately | 21 of 21 | 21/21 | 20/21 | 21/21 | MISSED |
+| 4. Token usage is recorded and calculated correctly | 10 of 10 | 10/10 | 9/10 (9 of 9 answered) | 10/10 | MISSED |
+| 5. Failed requests are recorded with their error details | 7 of 7 | 7/7 | 7/7 | 7/7 | MET |
 
 Run 2's 9th request (in-scope, textbook-edition question) hit Gemini's free-tier quota: `429 RESOURCE_EXHAUSTED`. `generate.py::generate` retried 4 times (1 + 2 + 4 + 8 s backoff), gave up, and the server returned a 500 after 15.5 s. Only 9 of the 10 in-scope requests in run 2 produced an answer.
 
@@ -542,9 +542,89 @@ Run 2 has 9 answered records, all with correct token counts. The 10th in-scope r
 {"ts": "2026-11-16T04:31:13.551+00:00", "request_id": "63dec96ac870", "route": "/ask", "status": "error", "http_status": 500, "question": "What can a student do if they are not getting along with their roommate?", "answer": null, "sources": null, "retrieved": null, "best_distance": null, "threshold": null, "latency_ms": 1287.4, "retrieve_ms": null, "generate_ms": null, "cache_hit": null, "model_attempts": null, "prompt_tokens": null, "output_tokens": null, "total_tokens": null, "model": "gemini-3.5-flash-lite", "corpus": "advice_threads", "error_type": "ClientError", "error": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"}
 ```
 
+**Verdicts**
+
+| # | Verdict | How I decided |
+|---|---|---|
+| 1 | MET | 21/21 in all three runs. Every request in each run's client manifest has exactly one matching `request_id` in the server log, including the request that failed in run 2. |
+| 2 | MET | 21/21 in all three runs. This one can't really fail: `runlog.py::write` builds every record from the fixed `FIELDS` list, so all 23 keys are always present. That makes the target too low (see below). |
+| 3 | MISSED | The target is 21 of 21 in every run. Run 2 came out 20/21. The target has to hold in all three runs, not most of them. |
+| 4 | MISSED | Run 2 has 9/10. My target and my reason both name the 10 uncached requests that should produce answers. Only 9 did, so a 10th token record doesn't exist. Counting only the requests that did answer (9 of 9) would quietly lower the target to whatever happened, so I count it against 10. |
+| 5 | MET | 7/7 in all three runs. All 6 malformed requests were `rejected` with a 400 and an `error_type`, and the invalid-key request was an `error` with a 500, an `error_type`, and the `error` message. |
+
+**Diagnosis**
+
+Both misses are one problem, not two. In run 2, the 9th request (the textbook-edition question) failed in the **generation stage**, and the **logging on the error path** then lost most of what had happened.
+
+- *Where it failed:* `generate.py::generate`. Gemini returned `429 RESOURCE_EXHAUSTED` (`generate_content_free_tier_requests`), the free tier's per-minute request quota. In the 60 seconds before it, 18 Gemini calls had succeeded: 10 from run 1 and 8 from run 2, because the trials ran back to back. The client-side limiter in `generate.py::_wait_for_slot` didn't prevent it, for two reasons. It allows 30 requests a minute (`config.REQUESTS_PER_MINUTE`), which is more than the real quota. And it only counts calls made by its own process, while each trial starts a new server, so it never saw run 1's 10 calls. On the 429, `generate()` retried 4 times with 1, 2, 4 and 8 s waits: 15 s in total, inside a quota window that is a full minute. Then it raised `RuntimeError`, and `serve.py::ask` returned a 500 after 15.5 s. Run 3 sent a similar burst without hitting the quota, so I can see the limit exists, but not exactly where it sits.
+- *Why that cost criterion 4:* the 10th request never produced an answer, so there was no token record to count.
+- *Why that cost criterion 3:* the stage timings and the attempt count live in the dict that `app.py::ask_pipeline` *returns*. When the pipeline raises instead of returning, that dict is lost, and `serve.py::ask`'s `except` branch only has the exception to log. So the error record says `retrieve_ms: null`, `generate_ms: null`, `model_attempts: null`, even though retrieval ran and 4 calls were sent to Gemini. The mechanism is that my instrumentation only records what the happy path hands back. The request where the log mattered most is the one where it recorded least. The same gap shows on the deliberate invalid-key request in every run: `retrieve_ms: null`, `model_attempts: null`.
+
+**Targets set too low:** criteria 1, 2 and 5 were met in every run. Criterion 2 can't fail with this code, so it measures a guarantee rather than behaviour. If I wrote it again, I'd replace it with one about what's *in* the fields, e.g. that every `error` record has a numeric `retrieve_ms` and `model_attempts`, which is the gap this diagnosis found.
+
 **The Improvement**
 
-<!-- Milestone 6 -->
+**What I changed:** the error path now logs how far a request got before it failed. `app.py::ask_pipeline` takes a `trace` dict and fills it in *as each stage finishes*: retrieval time and results, the gate's distance, then generation time and the model-attempt count, recorded in a `finally` so they're kept even when the Gemini call raises. `serve.py::ask` passes that dict in, and its `except` branch now writes `retrieve_ms`, `generate_ms`, `model_attempts`, `retrieved`, `best_distance` and `threshold` into the error record. Before, it wrote only the exception. `generate.py::reset_last_call` clears the per-thread usage first, so a failure can't report the previous request's numbers. The 23-field schema is unchanged, and nothing about retrieval, the gate, the prompt or the retry behaviour changed.
+
+**Why I picked it:** it targets the mechanism behind criterion 3's miss: stage timings lived only in the dict `ask_pipeline` *returns*, so a request that raised lost them. It's also the part of the diagnosis that falls inside my declared scope. "Failures get logged, not handled differently" rules out changing the retry and backoff in `generate.py`, which is what actually lost run 2's answer and cost criterion 4.
+
+One change to the scorer, made before the after-runs: `tools/check_criteria.py` used to fail every `error` record on criterion 3 automatically, because my criterion doesn't name that status. It now applies the criterion's own wording: a request that reaches retrieval must have a numeric `retrieve_ms`. Every error this system has produced happens in generation, after retrieval. I re-scored the three before-runs with the updated checker, and they come out exactly as before (run 2 is still 20/21 on criterion 3, still 9/10 on criterion 4).
+
+**Run Log: Before** (2026-11-16, `results/capstone/before_trial*`)
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Every `/ask` request produces exactly one log record | 21 of 21 | 21/21 | 21/21 | 21/21 | MET |
+| 2. Every log record contains all 23 required fields | 21 of 21 | 21/21 | 21/21 | 21/21 | MET |
+| 3. Request and processing times are recorded accurately | 21 of 21 | 21/21 | 20/21 | 21/21 | MISSED |
+| 4. Token usage is recorded and calculated correctly | 10 of 10 | 10/10 | 9/10 | 10/10 | MISSED |
+| 5. Failed requests are recorded with their error details | 7 of 7 | 7/7 | 7/7 | 7/7 | MET |
+
+**Run Log: After** (same procedure, three runs back to back, `python tools/run_trial.py --label after --trial N`, `results/capstone/after_trial*`)
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Every `/ask` request produces exactly one log record | 21 of 21 | 21/21 | 21/21 | 21/21 | MET |
+| 2. Every log record contains all 23 required fields | 21 of 21 | 21/21 | 21/21 | 21/21 | MET |
+| 3. Request and processing times are recorded accurately | 21 of 21 | 21/21 | 21/21 | 21/21 | MET |
+| 4. Token usage is recorded and calculated correctly | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
+| 5. Failed requests are recorded with their error details | 7 of 7 | 7/7 | 7/7 | 7/7 | MET |
+
+Scores for after-run 2, from `tools/check_criteria.py::main` (`after_trial2_check.txt`):
+
+```
+Trial log: C:\Users\ivanz\Downloads\Codepath AI 301\ai201-coursework\ai201-project1-unofficial-guide-starter-v2026\results\capstone\after_trial2.jsonl
+Requests sent (main phase): 21   records in log: 22
+
+C1  exactly one record per request ........ 21/21   (target 21 of 21)
+C2  all 23 fields in every record .......... 21/21   (target 21 of 21)
+C3  timings present / null as specified ... 21/21   (target 21 of 21)
+C4  token counts on answered requests ..... 10/10   (target 10 of 10; 10 of the in-scope requests were answered)
+      null tokens on refused + rejected ... 11/11
+C5  failures recorded with details ........ 7/7   (target 7 of 7)
+
+Notes:
+  - Outside C1–C3's 21: the model-error record has latency_ms 1263.9, retrieve_ms 157.8, generate_ms 1103.6, error_type 'ClientError'
+```
+
+The record the fix was aimed at, the deliberate model failure, in run 2 before and after. Before: `retrieve_ms`, `generate_ms` and `model_attempts` are all `null`. After: retrieval took 157.8 ms and found the right thread, and the one Gemini call failed 1103.6 ms later:
+
+```json
+{"ts": "2026-11-16T04:31:13.551+00:00", "request_id": "63dec96ac870", "route": "/ask", "status": "error", "http_status": 500, "question": "What can a student do if they are not getting along with their roommate?", "answer": null, "sources": null, "retrieved": null, "best_distance": null, "threshold": null, "latency_ms": 1287.4, "retrieve_ms": null, "generate_ms": null, "cache_hit": null, "model_attempts": null, "prompt_tokens": null, "output_tokens": null, "total_tokens": null, "model": "gemini-3.5-flash-lite", "corpus": "advice_threads", "error_type": "ClientError", "error": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"}
+{"ts": "2026-11-16T04:43:27.512+00:00", "request_id": "4947438d107c", "route": "/ask", "status": "error", "http_status": 500, "question": "What can a student do if they are not getting along with their roommate?", "answer": null, "sources": null, "retrieved": [{"label": "thread_roommate_conflict.txt#0", "distance": 0.3963}, {"label": "thread_group_project.txt#0", "distance": 0.5757}, {"label": "thread_office_hours_etiquette.txt#0", "distance": 0.7016}, {"label": "thread_study_spots.txt#0", "distance": 0.704}, {"label": "thread_commuting.txt#0", "distance": 0.7499}], "best_distance": 0.3963, "threshold": 0.7, "latency_ms": 1263.9, "retrieve_ms": 157.8, "generate_ms": 1103.6, "cache_hit": false, "model_attempts": 1, "prompt_tokens": null, "output_tokens": null, "total_tokens": null, "model": "gemini-3.5-flash-lite", "corpus": "advice_threads", "error_type": "ClientError", "error": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]}}"}
+```
+
+**Did it help?** Partly, and the after table makes it look better than it is.
+
+- **What the fix did, measured directly:** the model-error record (the one request in every run that fails on purpose) has `retrieve_ms`, `generate_ms` and `model_attempts` in 3 of 3 after-runs, against 0 of 3 before. An error record now shows where the time went and how many calls were sent. That's the gap that hid run 2's four retries.
+- **What the after table does *not* show:** criteria 3 and 4 went from MISSED to MET because no request *failed* in the after-runs, not because of the fix. The quota was hit again in after-run 2: `8` rate-limit retries in the server output (`after_trial2_server.txt`) across 4 requests. This time every one got through before running out of retries. The closest needed 4 attempts and 8 seconds:
+
+```json
+{"ts": "2026-11-16T04:43:14.972+00:00", "request_id": "a9c027367e84", "route": "/ask", "status": "answered", "http_status": 200, "question": "What are study spots students can use besides the library?", "answer": "According to the documents, study spots students can use besides the library include:\n\n* **Ridgeway Café** before 10am (thread_study_spots.txt).\n* **The science building**, which has open lounges on floors 2 through 5 that are unlocked and almost always empty (thread_study_spots.txt).", "sources": ["thread_commuting.txt", "thread_first_gen.txt", "thread_printing.txt", "thread_sleep_schedule.txt", "thread_study_spots.txt"], "retrieved": [{"label": "thread_study_spots.txt#0", "distance": 0.3698}, {"label": "thread_first_gen.txt#0", "distance": 0.5875}, {"label": "thread_commuting.txt#0", "distance": 0.6968}, {"label": "thread_printing.txt#0", "distance": 0.7032}, {"label": "thread_sleep_schedule.txt#0", "distance": 0.7237}], "best_distance": 0.3698, "threshold": 0.7, "latency_ms": 8040.3, "retrieve_ms": 30.9, "generate_ms": 8009.2, "cache_hit": false, "model_attempts": 4, "prompt_tokens": 821, "output_tokens": 71, "total_tokens": 892, "model": "gemini-3.5-flash-lite", "corpus": "advice_threads", "error_type": null, "error": null}
+```
+
+  One more 429 on that request, and run 2 would have repeated the before result for criterion 4. My change doesn't touch retrying, so criterion 4 is still exposed to the same failure. If it happens again, the difference is that the error record will now carry its timings and attempt count, so criterion 3 holds where it failed before.
+- **A side effect:** retries now show up in the log on answered requests too (`model_attempts` 2–4 and a `generate_ms` of up to 8 s in after-run 2). That makes quota pressure visible without reading the server console.
 
 **What's Still Broken**
 
