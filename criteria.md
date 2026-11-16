@@ -144,3 +144,39 @@ New Criteria: The run output does not preserve their retrieval ranking, and only
      The whole reason the originals stay visible is so someone can see what you
      said before you knew the answer.
      ───────────────────────────────────────────────────────────────────────── -->
+
+---
+
+## Capstone
+
+Written in the capstone unit (shape A: deploy and instrument), before any capstone trial was run. The Unit 1 criteria above are left exactly as they were.
+
+### 1. Every `/ask` request produces exactly one log record (21 of 21)
+
+Every POST request sent to `/ask`, including answered, refused, and rejected requests, must produce exactly one JSONL record in `logs/requests.jsonl`.
+
+**Why this target:** My test set contains 21 requests: 10 in-scope questions submitted twice, 5 out-of-scope questions, and 6 malformed requests. Every request needs a corresponding record so that no request disappears from the operational history. I chose 21/21 because logging only successful requests would defeat the purpose of adding instrumentation.
+
+### 2. Every log record contains all 23 required fields (21 of 21)
+
+Every JSONL record must contain all 23 expected fields: `ts`, `request_id`, `route`, `status`, `http_status`, `question`, `answer`, `sources`, `retrieved`, `best_distance`, `threshold`, `latency_ms`, `retrieve_ms`, `generate_ms`, `cache_hit`, `model_attempts`, `prompt_tokens`, `output_tokens`, `total_tokens`, `model`, `corpus`, `error_type`, and `error`. Fields that do not apply to a request must be recorded as `null` rather than omitted.
+
+**Why this target:** The log summary tool depends on a consistent structure to calculate request counts, latency, and token usage. Missing fields could cause incomplete metrics or errors when processing the JSONL file. I chose 21/21 because every request should follow the same logging schema, regardless of its outcome.
+
+### 3. Request and processing times are recorded accurately (21 of 21)
+
+Every request must have a non-negative numeric `latency_ms` value. Requests that reach retrieval must also have a numeric `retrieve_ms` value, and requests that generate an answer must have a numeric `generate_ms` value. Requests refused before generation or rejected before retrieval must have `null` for the stages they never reached.
+
+**Why this target:** The purpose of the instrumentation extension is to measure how much time each stage takes. Without separate retrieval and generation timings, I cannot identify which part of the system contributes most to response time. I chose 21/21 because every request should have an end-to-end latency measurement, even when it fails or gets rejected.
+
+### 4. Token usage is recorded and calculated correctly (10 of 10)
+
+Every answered request that reaches Gemini with caching disabled must contain numeric `prompt_tokens` and `output_tokens` values. The `total_tokens` field must equal the sum of those two values. Refused and rejected requests that do not call Gemini must have `null` token counts.
+
+**Why this target:** Token usage is the basis for estimating the cost of running the system. Incorrect or missing token counts would make the average cost per answered request unreliable. I chose 10/10 because my evaluation sends 10 uncached requests that generate answers, and every Gemini response should provide token usage metadata.
+
+### 5. Failed requests are recorded with their error details (7 of 7)
+
+All 6 malformed requests must return HTTP 400 with `status` set to `rejected` and a non-null `error_type` in their corresponding log records. Additionally, one deliberately triggered Gemini API failure must produce an HTTP 500 response with `status` set to `error`, a non-null `error_type`, and a non-null `error` message in its log record.
+
+**Why this target:** My system needs to preserve information about failures instead of only recording successful answers. Malformed inputs and model API failures follow different error paths, so both need to be tested. I chose 7/7 because all six malformed-input scenarios and the deliberately triggered model failure should leave enough information to identify what went wrong.
