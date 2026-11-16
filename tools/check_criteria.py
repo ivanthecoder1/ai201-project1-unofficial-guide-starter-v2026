@@ -99,9 +99,18 @@ def check(log_path: Path) -> dict:
             ok = ok and is_num(r.get("retrieve_ms")) and r.get("generate_ms") is None
         elif st == "rejected":
             ok = ok and r.get("retrieve_ms") is None and r.get("generate_ms") is None
+        elif st == "error":
+            # The criterion: "requests that reach retrieval must also have a
+            # numeric retrieve_ms". Every error this system has produced (quota,
+            # bad key) happens in generation, after retrieval, so an error
+            # record must carry retrieve_ms. An error raised inside retrieval
+            # itself would legitimately have none — flagged, not excused.
+            ok = ok and is_num(r.get("retrieve_ms"))
+            if r.get("retrieve_ms") is None and r.get("retrieved") is None:
+                notes.append(f"C3: error record {r.get('request_id')} has no retrieve_ms and no retrieved list; "
+                             f"counted as a fail (only correct if the error was in generation — check `error`)")
         else:
-            notes.append(f"C3: main-phase record {r.get('request_id')} has status {st!r}; "
-                         f"the criterion doesn't say which stages it reached — counted as a fail")
+            notes.append(f"C3: main-phase record {r.get('request_id')} has unknown status {st!r} — counted as a fail")
             ok = False
         if ok:
             c3 += 1
@@ -166,7 +175,10 @@ def check(log_path: Path) -> dict:
         "c1": (c1, len(main)),
         "c2": (c2, len(main)),
         "c3": (c3, len(main)),
-        "c4": (c4, len(answered)),
+        # Denominator: the in-scope requests that SHOULD be answered (the
+        # criterion's "10 of 10"), not just the ones that happened to be.
+        "c4": (c4, len([s for s in main if s["set"] == "in"])),
+        "c4_answered": len(answered),
         "c4_nulls": (null_ok, len(non_model)),
         "c5": (c5, len(bad) + len(err)),
         "notes": notes,
@@ -182,7 +194,8 @@ def main():
     print(f"C1  exactly one record per request ........ {res['c1'][0]}/{res['c1'][1]}   (target 21 of 21)")
     print(f"C2  all 23 fields in every record .......... {res['c2'][0]}/{res['c2'][1]}   (target 21 of 21)")
     print(f"C3  timings present / null as specified ... {res['c3'][0]}/{res['c3'][1]}   (target 21 of 21)")
-    print(f"C4  token counts on answered requests ..... {res['c4'][0]}/{res['c4'][1]}   (target 10 of 10)")
+    print(f"C4  token counts on answered requests ..... {res['c4'][0]}/{res['c4'][1]}   (target 10 of 10; "
+          f"{res['c4_answered']} of the in-scope requests were answered)")
     print(f"      null tokens on refused + rejected ... {res['c4_nulls'][0]}/{res['c4_nulls'][1]}")
     print(f"C5  failures recorded with details ........ {res['c5'][0]}/{res['c5'][1]}   (target 7 of 7)")
     if res["notes"]:
