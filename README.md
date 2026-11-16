@@ -463,10 +463,15 @@ The session below is the full log from 2026-11-16 (`python tools/log_summary.py 
 
 **What It Costs**
 
-Per-run cost: 910.1 tokens per answered request (851 input + 59.1 output) and 1.14 s, mean of 10 live runs. Refused and rejected requests cost 0 tokens.
-How you measured it: 10 /ask requests with AI201_CACHE=0. Token counts come from Gemini’s usage_metadata on each response (logged as prompt_tokens and output_tokens), averaged by python tools/log_summary.py.
+**Per run:** **910.1 tokens per answered request** (851 input + 59.1 output) and **1.14 s** end to end inside the server, the mean of 10 live answered requests (the logged session on 2026-11-16 above). Refused and rejected requests never reach Gemini, so they cost **0 tokens** (about 35 ms and under 1 ms respectively). The free tier's actual spend is **$0**. Tokens and seconds are the real cost here.
 
-The 100-people-a-day arithmetic officially belongs to Mil
+**How I measured it:** I started the server with the response cache off (`AI201_CACHE=0`) so every answer was a real Gemini call, and sent 10 in-scope requests with `tools/drive.py --set in --repeat 2`. The token counts are the ones Gemini reports on each response (`usage_metadata`), logged per request as `prompt_tokens` and `output_tokens` by `generate.py::last_call`, and averaged by `python tools/log_summary.py`. Nothing came from a pricing page. As a cross-check, the 59 answered requests across all six M5/M6 trials averaged 912 tokens. Input barely moves (851 every time, since the prompt is always 5 chunks + the question); output varies with the answer (28 to 111 tokens).
+
+**A hundred people a day:** if each of 100 people asks one in-scope question:
+- Tokens: 100 × 910.1 = **91,010 tokens/day** (100 × 851 = 85,100 input + 100 × 59.1 = 5,910 output).
+- Server time: 100 × 1.14 s = **114 s/day**.
+
+Refused questions would bring both numbers down. On the free tier that's still $0. The real limit isn't money, it's the per-minute quota. My trials hit `429 RESOURCE_EXHAUSTED` after about 18 calls in one minute, so 100 questions spread over a day is fine, but 20 people asking in the same minute would not be.
 
 **Run Log and Verdicts**
 
@@ -628,8 +633,15 @@ The record the fix was aimed at, the deliberate model failure, in run 2 before a
 
 **What's Still Broken**
 
-<!-- Milestone 7 -->
+No criterion was missed in the after-runs. That doesn't mean nothing is broken:
+
+- **Criterion 4 is still exposed to the quota.** The improvement made failures *visible*; it didn't stop them. In after-run 2 the quota was hit again (8 retries across 4 requests), and one request needed all 4 attempts. One more 429 there and criterion 4 would have missed exactly as it did before. What I'd do: make the retry in `generate.py::generate` outlast the quota window (wait out the delay Gemini returns, with a total wait past 60 s instead of 15 s), and set `config.REQUESTS_PER_MINUTE` to the real free-tier limit rather than 30. Why I stopped: that's failure *handling*, which I put out of scope for shape A ("failures get logged, not handled differently"), and the unit's one improvement went to the logging gap that cost criterion 3.
+- **Targets I set too low:** criterion 2 can't fail. `runlog.py::write` always writes all 23 keys, so it measured a guarantee in the code, not behaviour. I'd replace it with: *every `error` record has a numeric `retrieve_ms` and `model_attempts` (3 of 3 triggered failures)*. That's the gap the diagnosis actually found. I'd also tighten criterion 5 by adding the failure that really happened, a quota 429, to the deliberately triggered failures, instead of testing only a bad API key.
+
+**What I'd do next:** if this were real, I'd extend the guide to more than one corpus, starting with indexing `campus_life` (courses, housing, dining, admin deadlines) alongside `advice_threads`, so it can answer a much wider range of student questions instead of refusing anything outside 23 forum threads. I'd do that first because the gate currently refuses every question outside those threads. The catch is that my 0.7 cutoff was measured on `advice_threads` alone, so each corpus would need its own relevance cutoff measured the same way, and my criteria and test questions would have to cover both corpora.
 
 **How I Used AI**
 
-<!-- Milestone 7: two specific moments. -->
+**1. Coming up with the extension.** I asked Claude to help me choose and scope the capstone for this project. It read the repo, pointed out that `serve.py` had been deliberately left without logging or timing, and offered the three shapes. It recommended shape A on Path B, because the local embedding model plus Chroma wouldn't fit comfortably in a 512 MB free host. I took that, and it drafted the logging layer and the `drive.py`/`log_summary.py` tools. What came back wasn't all right. To check for regressions, it ran the starter's staff smoke test, which silently rebuilt my real index with fake embeddings. My next logged session refused all 10 in-scope questions. I caught it from my own log: every best distance was 0.92 or higher, and the roommate question retrieved the changing-major thread. I rebuilt the index and kept that session as `logs/broken_index_session.jsonl`. In Milestone 6 it offered two improvements. I chose logging the error path over fixing the retry, because the retry fix would have broken the out-of-scope line I'd already written.
+
+**2. Refining the wording and organizing.** I asked Claude to help refine and organize my writing for the README and criteria. 
