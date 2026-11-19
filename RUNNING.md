@@ -272,17 +272,18 @@ After the one-time setup below, this single command starts the service:
 python serve.py
 ```
 
-It listens on `http://localhost:5000` (set `PORT` to change it). Every
-`POST /ask` writes one JSON line to `logs/requests.jsonl`.
+It listens on `http://127.0.0.1:5000` (set `PORT` to change it). Every
+`POST /ask` writes one JSON line to `logs/requests.jsonl`, or to
+`AI201_LOG_PATH` if that is set.
 
 ### Environment
 
 | Thing | Value |
 |---|---|
 | Python | 3.13 (tested on 3.13.15, Windows 11). 3.11+ should work; 3.14 is untested. |
-| Dependencies | `requirements-lock.txt`: exact pins from `pip freeze` of the working venv. `requirements.txt` holds the looser ranges the starter shipped with. |
+| Dependencies | `requirements-lock.txt`: exact pins from `pip freeze` of the working venv. Frozen and tested on **Windows only**. It has no Windows-only packages, but it is untested on macOS and Linux. If a pin fails to install there, use `pip install -r requirements.txt` (the starter's looser ranges). |
 | Embedding model | `all-MiniLM-L6-v2` (ONNX), downloaded by Chroma on first use from `chroma-onnx-models.s3.amazonaws.com`. Download is 83 MB (`onnx.tar.gz`); 91 MB `model.onnx` once extracted; about 170 MB on disk in `~/.cache/chroma/onnx_models/`. |
-| Generation | Gemini, model `gemini-3.5-flash-lite` (`config.MODEL`), through the key in `.env`. |
+| Generation | Gemini, model `gemini-3.5-flash-lite` (`config.MODEL`), through **your own** key in `.env`. A free key from https://aistudio.google.com works. |
 | Vector index | `chroma_db/`, built locally by `python app.py index`. Not committed. |
 
 ### One-time setup, from a clean checkout
@@ -290,48 +291,116 @@ It listens on `http://localhost:5000` (set `PORT` to change it). Every
 **Windows (PowerShell)**
 
 ```powershell
-git clone <this repo> unofficial-guide
+git clone https://github.com/ivanthecoder1/ai201-project1-unofficial-guide-starter-v2026.git unofficial-guide
 cd unofficial-guide
 py -3.13 -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements-lock.txt
 copy .env.example .env          # paste your GEMINI_API_KEY into .env
 python app.py index             # downloads the embedding model the first time
-python serve.py
 ```
+
+If `Activate.ps1` is blocked ("running scripts is disabled on this system"),
+allow it for this terminal window only, then activate again:
+`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.
 
 **macOS / Linux**
 
 ```bash
-git clone <this repo> unofficial-guide && cd unofficial-guide
+git clone https://github.com/ivanthecoder1/ai201-project1-unofficial-guide-starter-v2026.git unofficial-guide
+cd unofficial-guide
 python3.13 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-lock.txt
 cp .env.example .env            # paste your GEMINI_API_KEY into .env
 python app.py index
-python serve.py
 ```
+
+### Start it, and check it's working
+
+> **Use your own log file.** `logs/requests.jsonl` in this repo is my committed
+> record of a real session, and the server *appends* to it. Point yours
+> somewhere else so your runs don't mix into that evidence.
+
+**Windows (PowerShell)**, with the response cache off:
+
+```powershell
+$env:AI201_LOG_PATH = "logs/my_session.jsonl"; $env:AI201_CACHE = "0"; python serve.py
+```
+
+**Linux**
+
+```bash
+AI201_LOG_PATH=logs/my_session.jsonl AI201_CACHE=0 python serve.py
+```
+
+**macOS:** port 5000 is taken by AirPlay Receiver (System Settings → General
+→ AirDrop & Handoff), so use another port. Then add
+`--url http://127.0.0.1:5001/ask` to every `drive.py` command below:
+
+```bash
+PORT=5001 AI201_LOG_PATH=logs/my_session.jsonl AI201_CACHE=0 python serve.py
+```
+
+From a second terminal, check the service is up and has an index:
+
+```bash
+curl http://127.0.0.1:5000/health
+```
+
+It should print `"index_ready": true`. If it says `false`, run
+`python app.py index` and restart the server. If every question then gets
+refused with best distances of 0.9 or more, the index is wrong; rebuild it
+the same way.
+
+Use `127.0.0.1`, not `localhost`. On Windows, `localhost` tries IPv6 first
+and adds about 2 seconds to every request seen from the client.
+
+> **Don't run `tools/smoke_test.py`.** It's a starter staff tool that rebuilds
+> the real index in `chroma_db/` with fake embeddings, so every question
+> afterwards gets refused until you run `python app.py index` again.
 
 ### Talking to it, and reading the record back
 
-From a second terminal (venv active):
+From the second terminal (venv active):
 
 ```bash
 python tools/drive.py                  # 5 in-scope + 5 out-of-scope questions
 python tools/drive.py --set bad        # 6 malformed requests, each should get a 400
-python tools/log_summary.py            # latency, stage timings, tokens per request
-python tools/log_summary.py --paste 12 # raw records, for the README
+python tools/log_summary.py --log logs/my_session.jsonl            # latency, stage timings, tokens
+python tools/log_summary.py --log logs/my_session.jsonl --paste 12 # raw records
 ```
 
-For a cost measurement, start the server with the response cache off, or
-repeated questions get served from `.cache/` for 0 tokens:
+The response cache is off in the start commands above. With it on, a repeated
+question is served from `.cache/` for 0 tokens, and you'd be measuring the
+cache instead of Gemini.
 
-```powershell
-$env:AI201_CACHE = "0"; python serve.py
-```
+### Reproducing the capstone test
+
+The before/after numbers in the README came from this command, one trial at a
+time. It starts and stops its own server on port 5101, so it doesn't need
+(and won't disturb) the server above:
 
 ```bash
-AI201_CACHE=0 python serve.py
+python tools/run_trial.py --label mine --trial 1
 ```
 
-`AI201_LOG_PATH` sends the log somewhere other than `logs/requests.jsonl`.
-That's useful for keeping a throwaway test session out of the committed record.
+One trial:
+1. starts `serve.py` with the cache off;
+2. sends the 21 standard requests (5 in-scope ×2, 5 out-of-scope, 6 malformed);
+3. restarts the server with an invalid `GEMINI_API_KEY` and sends 1 question,
+   the deliberate model failure;
+4. scores the trial against the five criteria in `criteria.md` with
+   `tools/check_criteria.py`.
+
+Everything it writes goes to `results/capstone/mine_trial1.*`, and it refuses
+to overwrite an existing trial. Each trial costs **10 Gemini calls**: the
+invalid-key request is rejected before any tokens are used. To re-score a
+trial without re-running it:
+
+```bash
+python tools/check_criteria.py results/capstone/mine_trial1.jsonl
+```
+
+Run three trials back to back and the free tier's per-minute quota can return
+a `429`. That's what happened in my before-run 2, and it's in the README's
+diagnosis. Wait a minute between trials if you want to avoid it.
